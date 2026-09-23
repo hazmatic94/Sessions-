@@ -1,4 +1,7 @@
-import { renderSessionsRecentSalesCard } from "/ds/src/components/cards/index.js";
+import {
+  renderSessionsRecentSalesCard,
+  renderSessionsUpcomingAppointmentsCard,
+} from "/ds/src/components/cards/index.js";
 import { SESSIONS_CHART_COLORS } from "/ds/src/components/patterns/chartColors.js";
 import {
   renderMobileMenu,
@@ -59,6 +62,41 @@ const recentSales = {
   ],
 };
 
+const upcomingAppointments = {
+  title: "Upcoming appointments",
+  period: "Last 7 days",
+  totalValue: "17",
+  totalLabel: "Booked",
+  metrics: [
+    { label: "Confirmed Appointments", value: "32" },
+    { label: "Cancelled Appointments", value: "4" },
+  ],
+  chart: {
+    columns: 7,
+    rows: 4,
+    max: 20,
+    startDate: "2025-03-19",
+    variant: "bar",
+    barColors: {
+      base: { color: SESSIONS_CHART_COLORS.confirmed },
+      stack: { color: SESSIONS_CHART_COLORS.cancelled },
+    },
+    bars: [
+      { value: 14 },
+      { base: 10, stack: 2 },
+      { value: 16.5 },
+      { value: 18 },
+      { base: 15, stack: 2 },
+      { value: 11 },
+      { value: 13 },
+    ],
+  },
+  legend: [
+    { label: "Confirmed", color: SESSIONS_CHART_COLORS.confirmed },
+    { label: "Cancelled", color: SESSIONS_CHART_COLORS.cancelled },
+  ],
+};
+
 export function renderHomePage() {
   return `
     <div class="home-shell">
@@ -68,7 +106,7 @@ export function renderHomePage() {
         <div id="top-nav" class="home-shell__desktop"></div>
         <main class="home-shell__main">
           ${renderPageWrapper({
-            content: renderSessionsRecentSalesCard(recentSales),
+            content: `<div class="home-card-row">${renderSessionsRecentSalesCard(recentSales)}${renderSessionsUpcomingAppointmentsCard(upcomingAppointments)}</div>`,
           })}
         </main>
       </div>

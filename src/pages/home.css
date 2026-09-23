@@ -46,6 +46,19 @@ body {
   height: 100dvh;
 }
 
+.home-card-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--spacing-24);
+}
+
+.home-card-row > .sessions-card {
+  flex: 1 1 320px;
+  width: auto;
+  max-width: 656px;
+}
+
 .home-shell__main {
   flex: 1;
   min-width: 0;
