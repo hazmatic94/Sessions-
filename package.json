@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.mjs"
+    "dev": "node server.mjs",
+    "postinstall": "node --input-type=module -e \"import { cpSync } from 'node:fs'; cpSync('node_modules/@sessions/design-system/assets', 'public/assets', { recursive: true })\""
   },
   "dependencies": {
-    "@sessions/design-system": "file:../Sessions-Design-System"
+    "@sessions/design-system": "git+https://github.com/hazmatic94/Sessions-Design-System.git"
   }
 }

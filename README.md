@@ -1,24 +1,16 @@
 # Sessions
 
-Booking platform for independent barbers. UI comes from [`@sessions/design-system`](https://github.com/hazmatic94/Sessions-Design-System).
+Booking platform for independent barbers. The home shell uses [`@sessions/design-system`](https://github.com/hazmatic94/Sessions-Design-System).
 
-Clone that repo next to this one, then install it and copy the icons into `public/assets`:
+## Run it on your machine
 
-```bash
-npm install ../Sessions-Design-System
-cp -R node_modules/@sessions/design-system/assets ./public/assets
-```
-
-Open the home shell:
+You need Node.js. Then, in this folder:
 
 ```bash
+npm install
 npm run dev
 ```
 
-That serves the top nav and left rail at `http://127.0.0.1:43123`. The page background is black900.
+Open Safari to [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
-Components are imported from the package source, for example:
-
-```js
-import { renderSessionsButton } from "@sessions/design-system/src/components/button/index.js";
-```
+`npm install` pulls the design system from GitHub and copies its icons and fonts into `public/assets`. The page background is black900.
