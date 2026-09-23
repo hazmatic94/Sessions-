@@ -62,10 +62,10 @@ const recentSales = {
 export function renderHomePage() {
   return `
     <div class="home-shell">
-      <div id="top-nav" class="home-shell__desktop"></div>
       <div id="mobile-nav" class="home-shell__mobile"></div>
-      <div class="home-shell__body">
-        <div class="home-shell__rail" id="rail"></div>
+      <div class="home-shell__rail" id="rail"></div>
+      <div class="home-shell__stage">
+        <div id="top-nav" class="home-shell__desktop"></div>
         <main class="home-shell__main">
           ${renderPageWrapper({
             content: renderSessionsRecentSalesCard(recentSales),

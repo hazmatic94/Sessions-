@@ -1,15 +1,21 @@
 html,
-body {
+body,
+#app {
   height: 100%;
   background: var(--black-900);
+}
+
+html,
+body {
+  overflow: hidden;
 }
 
 .home-shell {
   position: relative;
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
   background: var(--black-900);
 }
 
@@ -17,26 +23,33 @@ body {
   display: none;
 }
 
-.home-shell__body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  background: var(--black-900);
-}
-
 .home-shell__rail {
   display: flex;
   flex-shrink: 0;
-  height: 100%;
+  align-self: stretch;
+  height: 100dvh;
+  min-height: 100dvh;
 }
 
 .home-shell__rail .sessions-left-rail {
+  flex: 1;
   height: 100%;
+  min-height: 100%;
+}
+
+.home-shell__stage {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100dvh;
 }
 
 .home-shell__main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   overflow: auto;
   background: var(--black-900);
 }
@@ -45,6 +58,10 @@ body {
   .home-shell__desktop,
   .home-shell__rail {
     display: none;
+  }
+
+  .home-shell__stage {
+    width: 100%;
   }
 
   .home-shell__mobile {
