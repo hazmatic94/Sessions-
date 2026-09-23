@@ -156,9 +156,9 @@ export function renderHomePage() {
   return `
     <div class="home-shell">
       <div id="mobile-nav" class="home-shell__mobile"></div>
-      <div class="home-shell__rail" id="rail"></div>
-      <div class="home-shell__stage">
-        <div id="top-nav" class="home-shell__desktop"></div>
+      <div id="top-nav" class="home-shell__desktop"></div>
+      <div class="home-shell__body">
+        <div class="home-shell__rail" id="rail"></div>
         <main class="home-shell__main">
           ${renderPageWrapper({
             content: `<div class="home-card-stack"><div class="home-card-row">${renderSessionsRecentSalesCard(recentSales)}${renderSessionsUpcomingAppointmentsCard(upcomingAppointments)}</div><div class="home-card-row">${renderSessionsAppointmentActivityCard(appointmentActivity)}${renderSessionsTopServicesCard(topServices)}</div></div>`,

@@ -13,6 +13,7 @@ body {
 .home-shell {
   position: relative;
   display: flex;
+  flex-direction: column;
   height: 100dvh;
   min-height: 100dvh;
   overflow: hidden;
@@ -23,27 +24,30 @@ body {
   display: none;
 }
 
+.home-shell__desktop {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.home-shell__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
 .home-shell__rail {
   display: flex;
   flex-shrink: 0;
   align-self: stretch;
-  height: 100dvh;
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 0;
 }
 
 .home-shell__rail .sessions-left-rail {
   flex: 1;
   height: 100%;
   min-height: 100%;
-}
-
-.home-shell__stage {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  height: 100dvh;
 }
 
 .home-card-stack {
@@ -83,7 +87,7 @@ body {
     display: none;
   }
 
-  .home-shell__stage {
+  .home-shell__body {
     position: relative;
     z-index: 0;
     width: 100%;
