@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sessions</title>
+    <meta name="theme-color" content="#0f0f0f" />
+    <link rel="icon" href="/assets/sessions-favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/ds/src/styles/fonts.css" />
+    <link rel="stylesheet" href="/ds/src/styles/globals.css" />
+    <link rel="stylesheet" href="/ds/src/styles/navigation.css" />
+    <link rel="stylesheet" href="/ds/src/styles/avatar.css" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        background: var(--black-900);
+      }
+
+      .home-shell {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 100%;
+        background: var(--black-900);
+      }
+
+      .home-shell__body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        background: var(--black-900);
+      }
+
+      .home-shell__rail {
+        display: flex;
+        flex-shrink: 0;
+        height: 100%;
+      }
+
+      .home-shell__rail .sessions-left-rail {
+        height: 100%;
+      }
+
+      .home-shell__main {
+        flex: 1;
+        min-width: 0;
+        background: var(--black-900);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="home-shell">
+      <div id="top-nav"></div>
+      <div class="home-shell__body">
+        <div class="home-shell__rail" id="rail"></div>
+        <main class="home-shell__main"></main>
+      </div>
+    </div>
+    <script type="module">
+      import {
+        renderSessionsLeftRail,
+        renderTopNav,
+      } from "/ds/src/components/navigation/index.js";
+
+      document.querySelector("#top-nav").innerHTML = renderTopNav({
+        href: "/",
+        ariaLabel: "Sessions home",
+      });
+      document.querySelector("#rail").innerHTML = renderSessionsLeftRail({
+        selected: "home",
+      });
+    </script>
+  </body>
+</html>
