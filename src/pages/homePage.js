@@ -3,6 +3,7 @@ import {
   renderSessionsRecentSalesCard,
   renderSessionsTopServicesCard,
   renderSessionsUpcomingAppointmentsCard,
+  setupSessionsMetricCardScrollHints,
 } from "/ds/src/components/cards/index.js";
 import { SESSIONS_CHART_COLORS } from "/ds/src/components/patterns/chartColors.js";
 import {
@@ -10,6 +11,7 @@ import {
   renderSessionsLeftRail,
   renderTopNav,
 } from "/ds/src/components/navigation/index.js";
+import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderPageWrapper } from "/src/components/pageWrapper.js";
 
 const navOptions = {
@@ -101,20 +103,20 @@ const upcomingAppointments = {
 
 const appointmentActivity = {
   title: "Appointment activity",
-  viewAllHref: "#",
+  period: "Most recent",
   appointments: [
-    ["20", "Aug", "Skin Fade", "BOOKED", "Thu, 20 Aug 2026", "2:45pm", "Online Booking", "45min", 60],
-    ["20", "Aug", "Skin Fade", "BOOKED", "Thu, 20 Aug 2026", "2:45pm", "Online Booking", "45min", 60],
-    ["20", "Aug", "Skin Fade", "CANCELLED", "Thu, 20 Aug 2026", "3:30pm", "Online Booking", "45min", 60],
-    ["20", "Aug", "Skin Fade", "CANCELLED", "Thu, 20 Aug 2026", "4:15pm", "Online Booking", "45min", 60],
-    ["21", "Aug", "Beard Trim", "BOOKED", "Fri, 21 Aug 2026", "11:00am", "Walk-in", "30min", 35],
-    ["21", "Aug", "Buzz Cut", "BOOKED", "Fri, 21 Aug 2026", "12:00pm", "Online Booking", "30min", 40],
-    ["21", "Aug", "Line Up", "CANCELLED", "Fri, 21 Aug 2026", "1:00pm", "Walk-in", "20min", 25],
-    ["22", "Aug", "Skin Fade", "BOOKED", "Sat, 22 Aug 2026", "10:00am", "Online Booking", "45min", 60],
-    ["22", "Aug", "Taper Fade", "BOOKED", "Sat, 22 Aug 2026", "11:30am", "Online Booking", "45min", 55],
-    ["22", "Aug", "Beard Trim", "BOOKED", "Sat, 22 Aug 2026", "2:00pm", "Walk-in", "30min", 35],
-    ["23", "Aug", "Zero Fade", "BOOKED", "Sun, 23 Aug 2026", "9:30am", "Online Booking", "45min", 60],
-  ].map(([day, month, serviceName, status, dateLabel, startTime, bookingSource, duration, price]) => ({
+    ["20", "Aug", "Skin Fade", "BOOKED", "Thu, 20 Aug 2026", "2:45pm", "Online Booking", "45min"],
+    ["20", "Aug", "Skin Fade", "BOOKED", "Thu, 20 Aug 2026", "2:45pm", "Online Booking", "45min"],
+    ["20", "Aug", "Skin Fade", "CANCELLED", "Thu, 20 Aug 2026", "3:30pm", "Online Booking", "45min"],
+    ["20", "Aug", "Skin Fade", "CANCELLED", "Thu, 20 Aug 2026", "4:15pm", "Online Booking", "45min"],
+    ["21", "Aug", "Beard Trim", "BOOKED", "Fri, 21 Aug 2026", "11:00am", "Walk-in", "30min"],
+    ["21", "Aug", "Buzz Cut", "BOOKED", "Fri, 21 Aug 2026", "12:00pm", "Online Booking", "30min"],
+    ["21", "Aug", "Line Up", "CANCELLED", "Fri, 21 Aug 2026", "1:00pm", "Walk-in", "20min"],
+    ["22", "Aug", "Skin Fade", "BOOKED", "Sat, 22 Aug 2026", "10:00am", "Online Booking", "45min"],
+    ["22", "Aug", "Taper Fade", "BOOKED", "Sat, 22 Aug 2026", "11:30am", "Online Booking", "45min"],
+    ["22", "Aug", "Beard Trim", "BOOKED", "Sat, 22 Aug 2026", "2:00pm", "Walk-in", "30min"],
+    ["23", "Aug", "Zero Fade", "BOOKED", "Sun, 23 Aug 2026", "9:30am", "Online Booking", "45min"],
+  ].map(([day, month, serviceName, status, dateLabel, startTime, bookingSource, duration]) => ({
     day,
     month,
     serviceName,
@@ -124,13 +126,12 @@ const appointmentActivity = {
     bookingSource,
     duration,
     staffMember: "Larry",
-    price,
   })),
 };
 
 const topServices = {
   title: "Top Services",
-  period: "Last 30 Days",
+  period: "Last 30 days",
   services: [
     ["Skin Fade", 309, 8, "up", 32],
     ["Taper Fade", 276, 5, "up", 28],
@@ -165,6 +166,7 @@ export function renderHomePage() {
           })}
         </main>
       </div>
+      ${renderSessionsFooter()}
     </div>
   `;
 }
@@ -177,42 +179,50 @@ export function mountHomePage(root) {
   });
   root.querySelector("#mobile-nav").innerHTML = renderMobileMenu(navOptions);
   bindMobileMenu(root);
+  setupSessionsMetricCardScrollHints(root);
+}
+
+function setMobileMenuOpen(device, open) {
+  device.classList.toggle("is-open", open);
+  const toggle = device.querySelector("[data-mobile-menu-toggle]");
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute(
+      "aria-label",
+      open
+        ? toggle.dataset.closeLabel || "Close menu"
+        : toggle.dataset.menuLabel || "Open menu",
+    );
+  }
+  device
+    .querySelector("[data-mobile-menu-panel]")
+    ?.setAttribute("aria-hidden", String(!open));
 }
 
 function bindMobileMenu(root) {
   root.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-mobile-menu-toggle]");
-    if (!toggle) return;
+    if (toggle) {
+      event.preventDefault();
+      const device = toggle.closest(".mobile-menu-device");
+      if (!device) return;
+      setMobileMenuOpen(device, toggle.getAttribute("aria-expanded") !== "true");
+      return;
+    }
 
-    event.preventDefault();
-    const expanded = toggle.getAttribute("aria-expanded") === "true";
-    const nextExpanded = !expanded;
-    toggle.setAttribute("aria-expanded", String(nextExpanded));
-    toggle.setAttribute(
-      "aria-label",
-      nextExpanded
-        ? toggle.dataset.closeLabel || "Close menu"
-        : toggle.dataset.menuLabel || "Open menu",
-    );
-
-    const device = toggle.closest(".mobile-menu-device");
-    device?.classList.toggle("is-open", nextExpanded);
-    device
-      ?.querySelector("[data-mobile-menu-panel]")
-      ?.setAttribute("aria-hidden", String(!nextExpanded));
+    if (
+      event.target.classList?.contains("mobile-menu-device") &&
+      event.target.classList.contains("is-open")
+    ) {
+      setMobileMenuOpen(event.target, false);
+    }
   });
 
   const mobileQuery = window.matchMedia("(max-width: 768px)");
   mobileQuery.addEventListener("change", (event) => {
     if (event.matches) return;
-
     root.querySelectorAll(".mobile-menu-device.is-open").forEach((device) => {
-      device.classList.remove("is-open");
-      const toggle = device.querySelector("[data-mobile-menu-toggle]");
-      if (!toggle) return;
-      toggle.setAttribute("aria-expanded", "false");
-      toggle.setAttribute("aria-label", toggle.dataset.menuLabel || "Open menu");
-      device.querySelector("[data-mobile-menu-panel]")?.setAttribute("aria-hidden", "true");
+      setMobileMenuOpen(device, false);
     });
   });
 }
