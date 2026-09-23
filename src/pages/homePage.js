@@ -1,5 +1,7 @@
 import {
+  renderSessionsAppointmentActivityCard,
   renderSessionsRecentSalesCard,
+  renderSessionsTopServicesCard,
   renderSessionsUpcomingAppointmentsCard,
 } from "/ds/src/components/cards/index.js";
 import { SESSIONS_CHART_COLORS } from "/ds/src/components/patterns/chartColors.js";
@@ -97,6 +99,59 @@ const upcomingAppointments = {
   ],
 };
 
+const appointmentActivity = {
+  title: "Appointment activity",
+  viewAllHref: "#",
+  appointments: [
+    ["20", "Aug", "Skin Fade", "BOOKED", "Thu, 20 Aug 2026", "2:45pm", "Online Booking", "45min", 60],
+    ["20", "Aug", "Skin Fade", "BOOKED", "Thu, 20 Aug 2026", "2:45pm", "Online Booking", "45min", 60],
+    ["20", "Aug", "Skin Fade", "CANCELLED", "Thu, 20 Aug 2026", "3:30pm", "Online Booking", "45min", 60],
+    ["20", "Aug", "Skin Fade", "CANCELLED", "Thu, 20 Aug 2026", "4:15pm", "Online Booking", "45min", 60],
+    ["21", "Aug", "Beard Trim", "BOOKED", "Fri, 21 Aug 2026", "11:00am", "Walk-in", "30min", 35],
+    ["21", "Aug", "Buzz Cut", "BOOKED", "Fri, 21 Aug 2026", "12:00pm", "Online Booking", "30min", 40],
+    ["21", "Aug", "Line Up", "CANCELLED", "Fri, 21 Aug 2026", "1:00pm", "Walk-in", "20min", 25],
+    ["22", "Aug", "Skin Fade", "BOOKED", "Sat, 22 Aug 2026", "10:00am", "Online Booking", "45min", 60],
+    ["22", "Aug", "Taper Fade", "BOOKED", "Sat, 22 Aug 2026", "11:30am", "Online Booking", "45min", 55],
+    ["22", "Aug", "Beard Trim", "BOOKED", "Sat, 22 Aug 2026", "2:00pm", "Walk-in", "30min", 35],
+    ["23", "Aug", "Zero Fade", "BOOKED", "Sun, 23 Aug 2026", "9:30am", "Online Booking", "45min", 60],
+  ].map(([day, month, serviceName, status, dateLabel, startTime, bookingSource, duration, price]) => ({
+    day,
+    month,
+    serviceName,
+    status,
+    dateLabel,
+    startTime,
+    bookingSource,
+    duration,
+    staffMember: "Larry",
+    price,
+  })),
+};
+
+const topServices = {
+  title: "Top Services",
+  period: "Last 30 Days",
+  services: [
+    ["Skin Fade", 309, 8, "up", 32],
+    ["Taper Fade", 276, 5, "up", 28],
+    ["Zero Fade", 198, 3, "down", 20],
+    ["Beard Trim", 154, 2, "up", 16],
+    ["Buzz Cut", 128, 1, "up", 4],
+    ["Line Up", 112, 4, "up", 3],
+    ["Hot Towel Shave", 98, 2, "down", 3],
+    ["Kids Cut", 87, 6, "up", 3],
+    ["Design", 76, 1, "up", 2],
+    ["Colour", 64, 3, "down", 2],
+    ["Wash & Style", 52, 2, "up", 2],
+  ].map(([serviceName, bookingCount, changePercent, trend, percentage]) => ({
+    serviceName,
+    bookingCount,
+    changePercent,
+    trend,
+    percentage,
+  })),
+};
+
 export function renderHomePage() {
   return `
     <div class="home-shell">
@@ -106,7 +161,7 @@ export function renderHomePage() {
         <div id="top-nav" class="home-shell__desktop"></div>
         <main class="home-shell__main">
           ${renderPageWrapper({
-            content: `<div class="home-card-row">${renderSessionsRecentSalesCard(recentSales)}${renderSessionsUpcomingAppointmentsCard(upcomingAppointments)}</div>`,
+            content: `<div class="home-card-stack"><div class="home-card-row">${renderSessionsRecentSalesCard(recentSales)}${renderSessionsUpcomingAppointmentsCard(upcomingAppointments)}</div><div class="home-card-row">${renderSessionsAppointmentActivityCard(appointmentActivity)}${renderSessionsTopServicesCard(topServices)}</div></div>`,
           })}
         </main>
       </div>

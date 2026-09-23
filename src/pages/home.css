@@ -46,17 +46,27 @@ body {
   height: 100dvh;
 }
 
-.home-card-row {
+.home-card-stack {
   display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
+  flex-direction: column;
   gap: var(--spacing-24);
 }
 
+.home-card-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-24);
+  align-items: stretch;
+}
+
 .home-card-row > .sessions-card {
-  flex: 1 1 320px;
-  width: auto;
-  max-width: 656px;
+  width: 100%;
+}
+
+@media (max-width: 960px) {
+  .home-card-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .home-shell__main {
