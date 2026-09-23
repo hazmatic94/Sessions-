@@ -1,0 +1,14 @@
+.calendar-stage {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--black-900);
+}
+
+@media (max-width: 768px) {
+  .calendar-stage {
+    padding-top: var(--mobile-menu-height);
+  }
+}

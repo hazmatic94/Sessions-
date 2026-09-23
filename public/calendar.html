@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendar · Sessions</title>
+    <meta name="theme-color" content="#0f0f0f" />
+    <link rel="icon" href="/assets/sessions-favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/ds/src/styles/fonts.css" />
+    <link rel="stylesheet" href="/ds/src/styles/globals.css" />
+    <link rel="stylesheet" href="/ds/src/styles/navigation.css" />
+    <link rel="stylesheet" href="/ds/src/styles/avatar.css" />
+    <link rel="stylesheet" href="/ds/src/styles/button.css" />
+    <link rel="stylesheet" href="/ds/src/styles/patterns.css" />
+    <link rel="stylesheet" href="/src/pages/home.css" />
+    <link rel="stylesheet" href="/src/pages/calendar.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { mountCalendarPage } from "/src/pages/calendarPage.js";
+
+      mountCalendarPage(document.querySelector("#app"));
+    </script>
+  </body>
+</html>

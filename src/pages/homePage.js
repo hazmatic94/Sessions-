@@ -13,6 +13,7 @@ import {
 } from "/ds/src/components/navigation/index.js";
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderPageWrapper } from "/src/components/pageWrapper.js";
+import { linkPrimaryNav } from "/src/components/primaryNav.js";
 
 const navOptions = {
   href: "/",
@@ -180,6 +181,7 @@ export function mountHomePage(root) {
   root.querySelector("#mobile-nav").innerHTML = renderMobileMenu(navOptions);
   bindMobileMenu(root);
   setupSessionsMetricCardScrollHints(root);
+  linkPrimaryNav(root);
 }
 
 function setMobileMenuOpen(device, open) {
