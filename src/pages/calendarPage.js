@@ -4,6 +4,8 @@ import {
   renderTopNav,
 } from "/ds/src/components/navigation/index.js";
 import { renderSessionsCalendarHeaderRow } from "/ds/src/components/patterns/calendarHeaderRow.js";
+import { renderSessionsHourColumn } from "/ds/src/components/patterns/hourColumn.js";
+import { renderSessionsHourLabel } from "/ds/src/components/patterns/hourLabel.js";
 import {
   renderSessionsStaffHeader,
   setupSessionsStaffHeaders,
@@ -31,7 +33,9 @@ export function renderCalendarPage() {
         <div class="calendar-stage">
           <div id="calendar-header"></div>
           <div id="staff-header"></div>
-          <main class="home-shell__main"></main>
+          <main class="home-shell__main">
+            <div id="hour-column" class="calendar-hour"></div>
+          </main>
         </div>
       </div>
     </div>
@@ -51,6 +55,10 @@ export function mountCalendarPage(root) {
     avatarSrc: "/assets/user.png",
     staff: STAFF,
   });
+  root.querySelector("#hour-column").innerHTML = `${renderSessionsHourLabel({
+    hour: 11,
+    minute: 0,
+  })}${renderSessionsHourColumn({ hour: 11 })}`;
   linkPrimaryNav(root, { selected: "Calendar" });
   setupSessionsStaffHeaders();
   bindMobileMenu(root);

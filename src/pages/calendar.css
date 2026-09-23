@@ -7,6 +7,13 @@
   background: var(--black-900);
 }
 
+.calendar-hour {
+  --sessions-hour-column-height: 140px;
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   .calendar-stage {
     padding-top: var(--mobile-menu-height);
