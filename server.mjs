@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const publicDir = join(root, "public");
+const pagesDir = join(root, "src");
 const designSystemDir = join(root, "node_modules/@sessions/design-system");
 const port = Number(process.env.PORT) || 43123;
 
@@ -47,9 +48,12 @@ const server = createServer((req, res) => {
   if (pathname === "/") pathname = "/index.html";
 
   const fromDesignSystem = pathname === "/ds" || pathname.startsWith("/ds/");
+  const fromPages = pathname === "/src" || pathname.startsWith("/src/");
   const file = fromDesignSystem
     ? resolveInside(designSystemDir, pathname.slice(3) || "/")
-    : resolveInside(publicDir, pathname);
+    : fromPages
+      ? resolveInside(pagesDir, pathname.slice(4) || "/")
+      : resolveInside(publicDir, pathname);
 
   if (!file || !existsSync(file) || !statSync(file).isFile()) {
     send(res, 404, "Not found", { "Content-Type": "text/plain; charset=utf-8" });

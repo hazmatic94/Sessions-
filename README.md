@@ -13,4 +13,4 @@ npm run dev
 
 Open Safari to [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
-`npm install` pulls the design system from GitHub and copies its icons and fonts into `public/assets`. The page background is black900.
+`npm install` pulls the design system from GitHub and copies its icons and fonts into `public/assets`. The home page is `src/pages/homePage.js`. The page background is black900.
