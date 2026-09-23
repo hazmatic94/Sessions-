@@ -1,12 +1,62 @@
+import { renderSessionsRecentSalesCard } from "/ds/src/components/cards/index.js";
+import { SESSIONS_CHART_COLORS } from "/ds/src/components/patterns/chartColors.js";
 import {
   renderMobileMenu,
   renderSessionsLeftRail,
   renderTopNav,
 } from "/ds/src/components/navigation/index.js";
+import { renderPageWrapper } from "/src/components/pageWrapper.js";
 
 const navOptions = {
   href: "/",
   ariaLabel: "Sessions home",
+};
+
+const RECENT_SALES_DAILY = [385, 420, 510, 620, 340, 395, 430];
+const RECENT_SALES_APPOINTMENTS_DAILY = [210, 245, 315, 380, 185, 220, 235];
+
+function formatUsd(amount) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: false,
+  }).format(amount);
+}
+
+const recentSales = {
+  title: "Recent Sales",
+  period: "Last 7 days",
+  totalValue: formatUsd(RECENT_SALES_DAILY.reduce((sum, value) => sum + value, 0)),
+  metrics: [
+    { label: "Appointments", value: "47" },
+    {
+      label: "Appointments Value",
+      value: formatUsd(
+        RECENT_SALES_APPOINTMENTS_DAILY.reduce((sum, value) => sum + value, 0),
+      ),
+    },
+  ],
+  chart: {
+    columns: 7,
+    rows: 4,
+    startDate: "2025-03-19",
+    variant: "bar",
+    yAxisFormat: "currency",
+    barColors: {
+      base: { color: SESSIONS_CHART_COLORS.sales },
+      stack: { color: SESSIONS_CHART_COLORS.appointments },
+    },
+    bars: RECENT_SALES_DAILY.map((sales, index) => ({
+      base: sales,
+      stack: RECENT_SALES_APPOINTMENTS_DAILY[index],
+    })),
+  },
+  legend: [
+    { label: "Sales", color: SESSIONS_CHART_COLORS.sales },
+    { label: "Appointments", color: SESSIONS_CHART_COLORS.appointments },
+  ],
 };
 
 export function renderHomePage() {
@@ -16,7 +66,11 @@ export function renderHomePage() {
       <div id="mobile-nav" class="home-shell__mobile"></div>
       <div class="home-shell__body">
         <div class="home-shell__rail" id="rail"></div>
-        <main class="home-shell__main"></main>
+        <main class="home-shell__main">
+          ${renderPageWrapper({
+            content: renderSessionsRecentSalesCard(recentSales),
+          })}
+        </main>
       </div>
     </div>
   `;

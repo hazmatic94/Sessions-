@@ -37,6 +37,7 @@ body {
 .home-shell__main {
   flex: 1;
   min-width: 0;
+  overflow: auto;
   background: var(--black-900);
 }
 
