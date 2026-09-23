@@ -7,6 +7,10 @@
   background: var(--black-900);
 }
 
+.calendar-hours {
+  width: 100%;
+}
+
 .calendar-hour {
   --sessions-hour-column-height: 140px;
   display: grid;

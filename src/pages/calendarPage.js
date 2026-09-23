@@ -5,7 +5,11 @@ import {
 } from "/ds/src/components/navigation/index.js";
 import { renderSessionsCalendarHeaderRow } from "/ds/src/components/patterns/calendarHeaderRow.js";
 import { renderSessionsHourColumn } from "/ds/src/components/patterns/hourColumn.js";
-import { renderSessionsHourLabel } from "/ds/src/components/patterns/hourLabel.js";
+import {
+  applySessionsHourLabel,
+  renderSessionsHourLabel,
+} from "/ds/src/components/patterns/hourLabel.js";
+import { HOUR_COUNT } from "/ds/src/components/patterns/hourTime.js";
 import {
   renderSessionsStaffHeader,
   setupSessionsStaffHeaders,
@@ -34,7 +38,7 @@ export function renderCalendarPage() {
           <div id="calendar-header"></div>
           <div id="staff-header"></div>
           <main class="home-shell__main">
-            <div id="hour-column" class="calendar-hour"></div>
+            <div id="hour-column" class="calendar-hours"></div>
           </main>
         </div>
       </div>
@@ -55,13 +59,42 @@ export function mountCalendarPage(root) {
     avatarSrc: "/assets/user.png",
     staff: STAFF,
   });
-  root.querySelector("#hour-column").innerHTML = `${renderSessionsHourLabel({
-    hour: 11,
-    minute: 0,
-  })}${renderSessionsHourColumn({ hour: 11 })}`;
+  const hours = root.querySelector("#hour-column");
+  hours.innerHTML = Array.from({ length: HOUR_COUNT }, (_, hour) => {
+    return `<div class="calendar-hour">${renderSessionsHourLabel({
+      hour,
+      minute: 0,
+    })}${renderSessionsHourColumn({ hour })}</div>`;
+  }).join("");
+  syncHourClock(root, { scroll: true });
+  window.setInterval(() => syncHourClock(root), 1000);
   linkPrimaryNav(root, { selected: "Calendar" });
   setupSessionsStaffHeaders();
   bindMobileMenu(root);
+}
+
+function syncHourClock(root, { scroll = false } = {}) {
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+
+  root.querySelectorAll("[data-sessions-hour-label]").forEach((label) => {
+    const labelHour = Number(label.dataset.hour);
+    const nextMinute = labelHour === hour ? minute : 0;
+    if (Number(label.dataset.minute) !== nextMinute) {
+      applySessionsHourLabel(label, labelHour, nextMinute);
+    }
+  });
+
+  if (!scroll) return;
+  const current = root.querySelector(
+    `[data-sessions-hour-label][data-hour="${hour}"]`,
+  );
+  const row = current?.closest(".calendar-hour");
+  const scroller = root.querySelector(".home-shell__main");
+  if (!row || !scroller) return;
+  scroller.scrollTop +=
+    row.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
 }
 
 function setMobileMenuOpen(device, open) {
