@@ -4,7 +4,7 @@ const PRIMARY_NAV_HREFS = {
 };
 
 export function linkPrimaryNav(root, { selected } = {}) {
-  root.querySelectorAll(".sessions-rail-item, .sessions-nav-item").forEach((node) => {
+  root.querySelectorAll(".sessions-left-rail .sessions-rail-item, .mobile-menu-panel .sessions-nav-item").forEach((node) => {
     const label = node.getAttribute("aria-label");
     if (!label || node.classList.contains("mobile-menu__toggle")) return;
 
