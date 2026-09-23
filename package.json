@@ -1,0 +1,8 @@
+{
+  "name": "sessions",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@sessions/design-system": "file:../Sessions-Design-System"
+  }
+}
