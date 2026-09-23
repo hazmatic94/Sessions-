@@ -4,7 +4,17 @@ import {
   renderTopNav,
 } from "/ds/src/components/navigation/index.js";
 import { renderSessionsCalendarHeaderRow } from "/ds/src/components/patterns/calendarHeaderRow.js";
+import {
+  renderSessionsStaffHeader,
+  setupSessionsStaffHeaders,
+} from "/ds/src/components/patterns/staffHeader.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+
+const STAFF = [
+  { name: "Larry June", avatarSrc: "/assets/user.png" },
+  { name: "Marcus Bell", avatarInitial: "M" },
+  { name: "Sofia Reyes", avatarInitial: "S" },
+];
 
 const navOptions = {
   href: "/",
@@ -20,6 +30,7 @@ export function renderCalendarPage() {
         <div class="home-shell__rail" id="rail"></div>
         <div class="calendar-stage">
           <div id="calendar-header"></div>
+          <div id="staff-header"></div>
           <main class="home-shell__main"></main>
         </div>
       </div>
@@ -35,7 +46,13 @@ export function mountCalendarPage(root) {
   });
   root.querySelector("#mobile-nav").innerHTML = renderMobileMenu(navOptions);
   root.querySelector("#calendar-header").innerHTML = renderSessionsCalendarHeaderRow();
+  root.querySelector("#staff-header").innerHTML = renderSessionsStaffHeader({
+    name: "Larry June",
+    avatarSrc: "/assets/user.png",
+    staff: STAFF,
+  });
   linkPrimaryNav(root, { selected: "Calendar" });
+  setupSessionsStaffHeaders();
   bindMobileMenu(root);
 }
 
