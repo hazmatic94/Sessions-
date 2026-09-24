@@ -2,13 +2,17 @@ import {
   renderMobileMenu,
   renderSessionsLeftRail,
   renderTopNav,
+  setupSessionsProfileMenu,
 } from "/ds/src/components/navigation/index.js";
+import { setupSessionsCalendars } from "/ds/src/components/calendar/interactions.js";
 import { renderSessionsCalendarHeaderRow } from "/ds/src/components/patterns/calendarHeaderRow.js";
-import { renderSessionsHourColumn } from "/ds/src/components/patterns/hourColumn.js";
+import { setupSessionsNavigators } from "/ds/src/components/patterns/navigator.js";
 import {
-  applySessionsHourLabel,
-  renderSessionsHourLabel,
-} from "/ds/src/components/patterns/hourLabel.js";
+  renderSessionsCurrentTimeIndicator,
+  setupSessionsCurrentTimeIndicators,
+} from "/ds/src/components/patterns/currentTimeIndicator.js";
+import { renderSessionsHourColumn } from "/ds/src/components/patterns/hourColumn.js";
+import { renderSessionsHourLabel } from "/ds/src/components/patterns/hourLabel.js";
 import { HOUR_COUNT } from "/ds/src/components/patterns/hourTime.js";
 import {
   renderSessionsStaffHeader,
@@ -26,6 +30,15 @@ const navOptions = {
   href: "/",
   ariaLabel: "Sessions home",
 };
+
+const OPEN_FROM_HOUR = 9;
+const OPEN_UNTIL_HOUR = 18;
+const CLOSED_QUARTERS = [0, 15, 30, 45];
+
+function outsideMinutesForHour(hour) {
+  if (hour >= OPEN_FROM_HOUR && hour < OPEN_UNTIL_HOUR) return [];
+  return CLOSED_QUARTERS;
+}
 
 export function renderCalendarPage() {
   return `
@@ -49,6 +62,7 @@ export function renderCalendarPage() {
 export function mountCalendarPage(root) {
   root.innerHTML = renderCalendarPage();
   root.querySelector("#top-nav").innerHTML = renderTopNav(navOptions);
+  setupSessionsProfileMenu(root);
   root.querySelector("#rail").innerHTML = renderSessionsLeftRail({
     selected: "calendar",
   });
@@ -60,33 +74,38 @@ export function mountCalendarPage(root) {
     staff: STAFF,
   });
   const hours = root.querySelector("#hour-column");
-  hours.innerHTML = Array.from({ length: HOUR_COUNT }, (_, hour) => {
+  hours.innerHTML = `${Array.from({ length: HOUR_COUNT }, (_, hour) => {
     return `<div class="calendar-hour">${renderSessionsHourLabel({
       hour,
       minute: 0,
-    })}${renderSessionsHourColumn({ hour })}</div>`;
-  }).join("");
-  syncHourClock(root, { scroll: true });
-  window.setInterval(() => syncHourClock(root), 1000);
+    })}${renderSessionsHourColumn({
+      hour,
+      outsideMinutes: outsideMinutesForHour(hour),
+    })}</div>`;
+  }).join("")}${renderSessionsCurrentTimeIndicator()}`;
+  scrollToCurrentHour(root);
+  setupSessionsCurrentTimeIndicators(root);
+  placeCurrentTime(root);
+  setupSessionsNavigators(root);
+  setupSessionsCalendars();
   linkPrimaryNav(root, { selected: "Calendar" });
   setupSessionsStaffHeaders();
   bindMobileMenu(root);
 }
 
-function syncHourClock(root, { scroll = false } = {}) {
+function placeCurrentTime(root) {
+  const indicator = root.querySelector("[data-sessions-current-time]");
+  const row = root.querySelector(".calendar-hour");
+  if (!indicator || !row) return;
   const now = new Date();
-  const hour = now.getHours();
-  const minute = now.getMinutes();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  indicator.style.top = `${(minutes / 60) * row.getBoundingClientRect().height}px`;
+  const delay = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 50;
+  window.setTimeout(() => placeCurrentTime(root), delay);
+}
 
-  root.querySelectorAll("[data-sessions-hour-label]").forEach((label) => {
-    const labelHour = Number(label.dataset.hour);
-    const nextMinute = labelHour === hour ? minute : 0;
-    if (Number(label.dataset.minute) !== nextMinute) {
-      applySessionsHourLabel(label, labelHour, nextMinute);
-    }
-  });
-
-  if (!scroll) return;
+function scrollToCurrentHour(root) {
+  const hour = new Date().getHours();
   const current = root.querySelector(
     `[data-sessions-hour-label][data-hour="${hour}"]`,
   );

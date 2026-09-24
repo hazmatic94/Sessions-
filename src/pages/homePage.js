@@ -10,6 +10,7 @@ import {
   renderMobileMenu,
   renderSessionsLeftRail,
   renderTopNav,
+  setupSessionsProfileMenu,
 } from "/ds/src/components/navigation/index.js";
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderPageWrapper } from "/src/components/pageWrapper.js";
@@ -175,6 +176,7 @@ export function renderHomePage() {
 export function mountHomePage(root) {
   root.innerHTML = renderHomePage();
   root.querySelector("#top-nav").innerHTML = renderTopNav(navOptions);
+  setupSessionsProfileMenu(root);
   root.querySelector("#rail").innerHTML = renderSessionsLeftRail({
     selected: "home",
   });

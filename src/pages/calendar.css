@@ -8,13 +8,22 @@
 }
 
 .calendar-hours {
+  position: relative;
   width: 100%;
+}
+
+.calendar-hours > .sessions-current-time {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  transform: translateY(-50%);
 }
 
 .calendar-hour {
   --sessions-hour-column-height: 140px;
   display: grid;
-  grid-template-columns: 80px minmax(0, 1fr);
+  grid-template-columns: var(--spacing-64) minmax(0, 1fr);
   width: 100%;
 }
 
