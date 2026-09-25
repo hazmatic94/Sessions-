@@ -7,6 +7,6 @@
     "postinstall": "node --input-type=module -e \"import { cpSync } from 'node:fs'; cpSync('node_modules/@sessions/design-system/assets', 'public/assets', { recursive: true })\""
   },
   "dependencies": {
-    "@sessions/design-system": "file:../Sessions-Design-System"
+    "@sessions/design-system": "git+https://github.com/hazmatic94/Sessions-Design-System.git#bcb0d814801cd8c8d7f2e7dc5c5c329df7d4235b"
   }
 }
