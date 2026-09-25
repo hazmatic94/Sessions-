@@ -5,13 +5,21 @@ import {
   setupSessionsProfileMenu,
 } from "/ds/src/components/navigation/index.js";
 import { setupSessionsCalendars } from "/ds/src/components/calendar/interactions.js";
-import { renderSessionsCalendarHeaderRow } from "/ds/src/components/patterns/calendarHeaderRow.js";
-import { setupSessionsNavigators } from "/ds/src/components/patterns/navigator.js";
+import {
+  renderSessionsCalendarHeaderRow,
+  setupSessionsTeamMenus,
+} from "/ds/src/components/patterns/calendarHeaderRow.js";
+import { renderSessionsCalendarDayHeader } from "/ds/src/components/patterns/calendarDayHeader.js";
+import {
+  setupSessionsNavigators,
+  toNavigatorDateValue,
+} from "/ds/src/components/patterns/navigator.js";
 import {
   renderSessionsCurrentTimeIndicator,
   setupSessionsCurrentTimeIndicators,
 } from "/ds/src/components/patterns/currentTimeIndicator.js";
 import { renderSessionsHourColumn } from "/ds/src/components/patterns/hourColumn.js";
+import { setupSessionsSlotMenus } from "/ds/src/components/patterns/slotMenu.js";
 import { renderSessionsHourLabel } from "/ds/src/components/patterns/hourLabel.js";
 import { HOUR_COUNT } from "/ds/src/components/patterns/hourTime.js";
 import {
@@ -50,6 +58,7 @@ export function renderCalendarPage() {
         <div class="calendar-stage">
           <div id="calendar-header"></div>
           <div id="staff-header"></div>
+          <div id="calendar-days" hidden></div>
           <main class="home-shell__main">
             <div id="hour-column" class="calendar-hours"></div>
           </main>
@@ -67,7 +76,10 @@ export function mountCalendarPage(root) {
     selected: "calendar",
   });
   root.querySelector("#mobile-nav").innerHTML = renderMobileMenu(navOptions);
-  root.querySelector("#calendar-header").innerHTML = renderSessionsCalendarHeaderRow();
+  root.querySelector("#calendar-header").innerHTML = renderSessionsCalendarHeaderRow({
+    team: STAFF,
+    youName: "Larry June",
+  });
   root.querySelector("#staff-header").innerHTML = renderSessionsStaffHeader({
     name: "Larry June",
     avatarSrc: "/assets/user.png",
@@ -75,14 +87,18 @@ export function mountCalendarPage(root) {
   });
   const hours = root.querySelector("#hour-column");
   hours.innerHTML = `${Array.from({ length: HOUR_COUNT }, (_, hour) => {
+    const columns = Array.from({ length: 7 }, () =>
+      renderSessionsHourColumn({
+        hour,
+        outsideMinutes: outsideMinutesForHour(hour),
+      }),
+    ).join("");
     return `<div class="calendar-hour">${renderSessionsHourLabel({
       hour,
       minute: 0,
-    })}${renderSessionsHourColumn({
-      hour,
-      outsideMinutes: outsideMinutesForHour(hour),
-    })}</div>`;
+    })}${columns}</div>`;
   }).join("")}${renderSessionsCurrentTimeIndicator()}`;
+  applyCalendarLayout(root, "day");
   scrollToCurrentHour(root);
   setupSessionsCurrentTimeIndicators(root);
   placeCurrentTime(root);
@@ -90,7 +106,50 @@ export function mountCalendarPage(root) {
   setupSessionsCalendars();
   linkPrimaryNav(root, { selected: "Calendar" });
   setupSessionsStaffHeaders();
+  setupSessionsTeamMenus(root);
+  setupSessionsSlotMenus(root);
+  bindCalendarLayout(root);
   bindMobileMenu(root);
+}
+
+function calendarStartDate(root) {
+  return (
+    root.querySelector("[data-sessions-navigator]")?.dataset.sessionsNavigatorValue ??
+    toNavigatorDateValue("2026-08-18")
+  );
+}
+
+function applyCalendarLayout(root, view) {
+  const stage = root.querySelector(".calendar-stage");
+  const days = root.querySelector("#calendar-days");
+  const isThreeDay = view === "3day";
+  const isWeek = view === "week";
+  stage?.classList.toggle("is-view-3day", isThreeDay);
+  stage?.classList.toggle("is-view-week", isWeek);
+  if (!days) return;
+  days.hidden = !isThreeDay && !isWeek;
+  if (!isThreeDay && !isWeek) return;
+  const selected = calendarStartDate(root);
+  days.innerHTML = renderSessionsCalendarDayHeader({
+    start: selected,
+    selected,
+    week: isWeek,
+  });
+}
+
+function bindCalendarLayout(root) {
+  root.addEventListener("sessions:calendar-view", (event) => {
+    applyCalendarLayout(root, event.detail.view);
+  });
+  root.addEventListener("sessions:navigator-date", () => {
+    const stage = root.querySelector(".calendar-stage");
+    const view = stage?.classList.contains("is-view-week")
+      ? "week"
+      : stage?.classList.contains("is-view-3day")
+        ? "3day"
+        : "";
+    if (view) applyCalendarLayout(root, view);
+  });
 }
 
 function placeCurrentTime(root) {
