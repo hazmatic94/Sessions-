@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clients · Sessions</title>
+    <meta name="theme-color" content="#0f0f0f" />
+    <link rel="icon" href="/assets/sessions-favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/ds/src/styles/fonts.css" />
+    <link rel="stylesheet" href="/ds/src/styles/globals.css" />
+    <link rel="stylesheet" href="/ds/src/styles/navigation.css" />
+    <link rel="stylesheet" href="/ds/src/styles/avatar.css" />
+    <link rel="stylesheet" href="/ds/src/styles/button.css" />
+    <link rel="stylesheet" href="/ds/src/styles/search.css" />
+    <link rel="stylesheet" href="/ds/src/styles/menu.css" />
+    <link rel="stylesheet" href="/ds/src/styles/checkbox.css" />
+    <link rel="stylesheet" href="/ds/src/styles/tabs.css" />
+    <link rel="stylesheet" href="/ds/src/styles/patterns.css" />
+    <link rel="stylesheet" href="/ds/src/styles/card.css" />
+    <link rel="stylesheet" href="/ds/src/styles/notification.css" />
+    <link rel="stylesheet" href="/src/components/pageWrapper.css" />
+    <link rel="stylesheet" href="/src/pages/home.css" />
+    <link rel="stylesheet" href="/src/pages/clients.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { mountClientsPage } from "/src/pages/clientsPage.js";
+
+      mountClientsPage(document.querySelector("#app"));
+    </script>
+  </body>
+</html>

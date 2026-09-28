@@ -28,12 +28,43 @@
 .calendar-hour {
   --sessions-hour-column-height: 140px;
   display: grid;
-  grid-template-columns: var(--spacing-64) minmax(0, 1fr);
+  grid-template-columns: var(--spacing-64) repeat(var(--sessions-staff-count, 1), minmax(0, 1fr));
   width: 100%;
 }
 
-.calendar-hour > .sessions-hour-column:nth-child(n + 3) {
+.calendar-staff {
+  display: grid;
+  grid-template-columns: var(--spacing-64) repeat(var(--sessions-staff-count, 1), minmax(0, 1fr));
+}
+
+.calendar-staff::before {
+  content: "";
+  border-bottom: var(--border-width-default) solid var(--color-border-subtle);
+  background: var(--color-surface-elevated);
+}
+
+.calendar-staff .sessions-staff-header + .sessions-staff-header {
+  border-left: var(--border-width-default) solid var(--color-border-subtle);
+}
+
+.calendar-staff .sessions-staff-header__chevron {
   display: none;
+}
+
+.calendar-staff .sessions-staff-header__trigger {
+  padding: 0;
+}
+
+.calendar-hour > .sessions-hour-column.is-day-extra {
+  display: none;
+}
+
+.calendar-hour > .sessions-hour-column {
+  min-width: 0;
+}
+
+.calendar-hour > .sessions-hour-column + .sessions-hour-column {
+  border-left: var(--border-width-default) solid var(--color-border-subtle);
 }
 
 .calendar-stage.is-view-3day #staff-header,
@@ -41,26 +72,15 @@
   display: none;
 }
 
-.calendar-stage.is-view-3day .calendar-hour {
-  grid-template-columns: var(--spacing-64) repeat(3, minmax(0, 1fr));
+.calendar-stage.is-view-3day .home-shell__main,
+.calendar-stage.is-view-week .home-shell__main {
+  display: flex;
+  flex-direction: column;
 }
 
-.calendar-stage.is-view-week .calendar-hour {
-  grid-template-columns: var(--spacing-64) repeat(7, minmax(0, 1fr));
-}
-
-.calendar-stage.is-view-3day .calendar-hour > .sessions-hour-column:nth-child(-n + 4),
-.calendar-stage.is-view-week .calendar-hour > .sessions-hour-column {
-  display: block;
-}
-
-.calendar-stage.is-view-week .sessions-hour-column {
-  min-width: 0;
-}
-
-.calendar-stage.is-view-3day .calendar-hour > .sessions-hour-column + .sessions-hour-column,
-.calendar-stage.is-view-week .calendar-hour > .sessions-hour-column + .sessions-hour-column {
-  border-left: var(--border-width-default) solid var(--color-border-subtle);
+.calendar-stage.is-view-3day .calendar-hours,
+.calendar-stage.is-view-week .calendar-hours {
+  display: none;
 }
 
 @media (max-width: 768px) {

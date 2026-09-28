@@ -1,6 +1,8 @@
 const PRIMARY_NAV_HREFS = {
   Home: "/",
   Calendar: "/calendar",
+  Clients: "/clients",
+  Team: "/team",
 };
 
 export function linkPrimaryNav(root, { selected } = {}) {
