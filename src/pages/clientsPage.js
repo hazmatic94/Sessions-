@@ -9,6 +9,11 @@ import {
 import { renderSessionsFilterBar, setupSessionsFilterBars } from "/ds/src/components/patterns/filterBar.js";
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderSessionsClientList } from "/ds/src/components/rows/clientListRow.js";
+import { renderSessionsAddClientDrawer, setupSessionsAddClient } from "/ds/src/components/patterns/addClient.js";
+import {
+  renderSessionsClientProfileDrawer,
+  setupSessionsClientProfiles,
+} from "/ds/src/components/patterns/clientProfile.js";
 import { renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
 
@@ -79,7 +84,7 @@ function renderClientsHeader() {
     </div>
     <div class="clients-header__actions">
       ${renderSecondaryButton({ label: "Options", icon: "chevron-down", iconPosition: "end" })}
-      ${renderPrimaryButton({ label: "Add", icon: "plus" })}
+      ${renderPrimaryButton({ label: "Add", icon: "plus" }).replace("<button ", '<button data-sessions-add-client-open ')}
     </div>
   </header>`;
 }
@@ -98,6 +103,8 @@ export function renderClientsPage() {
         </main>
       </div>
       ${renderSessionsFooter()}
+      ${renderSessionsClientProfileDrawer()}
+      ${renderSessionsAddClientDrawer()}
     </div>
   `;
 }
@@ -113,6 +120,8 @@ export function mountClientsPage(root) {
   bindMobileMenu(root);
   linkPrimaryNav(root, { selected: "Clients" });
   setupSessionsFilterBars(root);
+  setupSessionsClientProfiles(root, { clients: CLIENTS });
+  setupSessionsAddClient(root);
   root.addEventListener("sessions:filter-sort", (event) => {
     const list = root.querySelector(".sessions-client-list");
     if (!list) return;
