@@ -14,7 +14,7 @@ import {
   renderSessionsClientProfileDrawer,
   setupSessionsClientProfiles,
 } from "/ds/src/components/patterns/clientProfile.js";
-import { renderPageWrapper } from "/src/components/pageWrapper.js";
+import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
 
 const navOptions = {
@@ -74,19 +74,12 @@ const CLIENTS = [
 ];
 
 function renderClientsHeader() {
-  return `<header class="clients-header">
-    <div class="sessions-page-header__text">
-      <div class="clients-header__title">
-        <h3 class="sessions-page-header__title">Clients list</h3>
-        ${renderSessionsChip({ label: "402" })}
-      </div>
-      <p class="sessions-page-header__body">View, add, edit and delete your client's details.</p>
-    </div>
-    <div class="clients-header__actions">
-      ${renderSecondaryButton({ label: "Options", icon: "chevron-down", iconPosition: "end" })}
-      ${renderPrimaryButton({ label: "Add", icon: "plus" }).replace("<button ", '<button data-sessions-add-client-open ')}
-    </div>
-  </header>`;
+  return renderPageTitle({
+    title: "Clients list",
+    body: "View, add, edit and delete your client's details.",
+    titleExtra: renderSessionsChip({ label: "402" }),
+    actions: `${renderSecondaryButton({ label: "Options", icon: "chevron-down", iconPosition: "end" })}${renderPrimaryButton({ label: "Add", icon: "plus" }).replace("<button ", '<button data-sessions-add-client-open ')}`,
+  });
 }
 
 export function renderClientsPage() {
