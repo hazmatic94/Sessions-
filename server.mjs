@@ -47,7 +47,6 @@ const server = createServer((req, res) => {
   if (pathname.endsWith("/") && pathname !== "/") pathname = pathname.slice(0, -1);
   if (pathname === "/") pathname = "/index.html";
   if (pathname === "/calendar") pathname = "/calendar.html";
-  if (pathname === "/services") pathname = "/services.html";
   if (pathname === "/clients") pathname = "/clients.html";
   if (pathname === "/team") pathname = "/team.html";
 
