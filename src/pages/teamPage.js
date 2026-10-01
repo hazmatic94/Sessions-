@@ -9,7 +9,7 @@ import {
 import { renderSessionsFilterBar } from "/ds/src/components/patterns/filterBar.js";
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderSessionsTeamList, setupSessionsTeamLists } from "/ds/src/components/rows/teamMemberRow.js";
-import { renderPageWrapper } from "/src/components/pageWrapper.js";
+import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
 
 const navOptions = {
@@ -33,16 +33,12 @@ const TEAM = [
 ];
 
 function renderTeamHeader() {
-  return `<header class="team-header">
-    <div class="team-header__title">
-      <h3 class="sessions-page-header__title">Team members</h3>
-      ${renderSessionsChip({ label: String(TEAM.length) })}
-    </div>
-    <div class="team-header__actions">
-      ${renderSecondaryButton({ label: "Options", icon: "chevron-down", iconPosition: "end" })}
-      ${renderPrimaryButton({ label: "Add", icon: "plus" })}
-    </div>
-  </header>`;
+  return renderPageTitle({
+    title: "Team members",
+    body: "View, add, edit and delete your team's details.",
+    titleExtra: renderSessionsChip({ label: String(TEAM.length), className: "sessions-chip--count" }),
+    actions: `${renderSecondaryButton({ label: "Options", icon: "chevron-down", iconPosition: "end" })}${renderPrimaryButton({ label: "Add", icon: "plus" })}`,
+  });
 }
 
 export function renderTeamPage() {
@@ -57,7 +53,6 @@ export function renderTeamPage() {
             content: `<div class="team-page">${renderTeamHeader()}${renderSessionsFilterBar({
               placeholder: "Search team members",
               name: "team-search",
-              filtersLabel: "Filters",
               sortLabel: "Custom order",
               sortOptions: [],
             })}${renderSessionsTeamList({ rows: TEAM })}</div>`,

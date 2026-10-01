@@ -86,13 +86,7 @@ export function mountCalendarPage(root) {
     team: STAFF,
     youName: "Larry June",
   });
-  root.querySelector("#staff-header").innerHTML = `<div class="calendar-staff">${STAFF.map((person) =>
-    renderSessionsStaffHeader({
-      name: person.name,
-      avatarSrc: person.avatarSrc,
-      avatarInitial: person.avatarInitial,
-    }),
-  ).join("")}</div>`;
+  root.querySelector("#staff-header").innerHTML = renderStaffHeader(STAFF);
   const hours = root.querySelector("#hour-column");
   hours.innerHTML = `${Array.from({ length: HOUR_COUNT }, (_, hour) => {
     const columns = Array.from({ length: 7 }, (_, index) => {
@@ -122,6 +116,58 @@ export function mountCalendarPage(root) {
   setupSessionsSlotMenus(root);
   bindCalendarLayout(root);
   bindMobileMenu(root);
+  applySelectedStaff(root);
+}
+
+function visibleStaff(root) {
+  const menu = root.querySelector("[data-sessions-team-menu]");
+  if (!menu) return STAFF;
+  const names = new Set(
+    [...menu.querySelectorAll("[data-sessions-team-member]")]
+      .filter((input) => input.checked)
+      .map((input) => input.dataset.sessionsTeamMember),
+  );
+  const staff = STAFF.filter((person) => names.has(person.name));
+  if (staff.length) return staff;
+  const you = STAFF.find((person) => person.name === menu.dataset.sessionsTeamYou);
+  return you ? [you] : STAFF.slice(0, 1);
+}
+
+function renderStaffHeader(staff) {
+  return `<div class="calendar-staff">${staff
+    .map((person) =>
+      renderSessionsStaffHeader({
+        name: person.name,
+        avatarSrc: person.avatarSrc,
+        avatarInitial: person.avatarInitial,
+      }),
+    )
+    .join("")}</div>`;
+}
+
+function applySelectedStaff(root) {
+  const staff = visibleStaff(root);
+  const stage = root.querySelector(".calendar-stage");
+  if (stage) stage.style.setProperty("--sessions-staff-count", String(staff.length));
+  const header = root.querySelector("#staff-header");
+  if (header) header.innerHTML = renderStaffHeader(staff);
+  root.querySelectorAll(".calendar-hour").forEach((row) => {
+    let index = 0;
+    [...row.children].forEach((column) => {
+      if (!column.classList.contains("sessions-hour-column")) return;
+      column.classList.toggle("is-day-extra", index >= staff.length);
+      index += 1;
+    });
+  });
+  const staffDays = root.querySelector("#staff-days");
+  if (staffDays && !staffDays.hidden) {
+    const stageView = stage?.classList.contains("is-view-week")
+      ? "week"
+      : stage?.classList.contains("is-view-3day")
+        ? "3day"
+        : "";
+    if (stageView) applyCalendarLayout(root, stageView);
+  }
 }
 
 function calendarStartDate(root) {
@@ -156,7 +202,7 @@ function applyCalendarLayout(root, view) {
   });
   if (staffDays) {
     staffDays.innerHTML = renderSessionsStaffDayBoard({
-      staff: STAFF,
+      staff: visibleStaff(root),
       start: selected,
       week: isWeek,
     });
@@ -206,6 +252,9 @@ function bindNavigatorChevrons(root) {
 function bindCalendarLayout(root) {
   root.addEventListener("sessions:calendar-view", (event) => {
     applyCalendarLayout(root, event.detail.view);
+  });
+  root.addEventListener("sessions:team-selection", () => {
+    applySelectedStaff(root);
   });
   root.addEventListener("sessions:navigator-date", (event) => {
     const date = event.detail?.date ?? calendarStartDate(root);
