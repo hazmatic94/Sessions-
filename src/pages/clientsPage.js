@@ -91,7 +91,7 @@ export function renderClientsPage() {
         <div class="home-shell__rail" id="rail"></div>
         <main class="home-shell__main">
           ${renderPageWrapper({
-            content: `<div class="clients-page">${renderClientsHeader()}${renderSessionsFilterBar()}${renderSessionsClientList({ rows: CLIENTS })}</div>`,
+            content: `<div class="clients-page">${renderClientsHeader()}${renderSessionsFilterBar()}${renderSessionsClientList({ rows: CLIENTS })}<p class="clients-results">Viewing 1 – ${CLIENTS.length} of ${CLIENTS.length} results</p></div>`,
           })}
         </main>
       </div>

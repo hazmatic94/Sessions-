@@ -4,3 +4,14 @@
   gap: var(--spacing-24);
 }
 
+.clients-results {
+  margin: 0;
+  color: var(--black-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b1);
+  font-weight: var(--text-body-b1-weight);
+  line-height: var(--text-body-b1-line-height);
+  letter-spacing: var(--text-body-b1-letter-spacing);
+  text-align: center;
+}
+
