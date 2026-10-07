@@ -4,3 +4,98 @@
   gap: var(--spacing-24);
 }
 
+.team-page__switch.sessions-tabs {
+  width: max-content;
+  max-width: 100%;
+  grid-template-columns: max-content max-content;
+  gap: var(--spacing-24);
+  padding: 0;
+}
+
+.team-page [data-team-panel="members"]:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-24);
+}
+
+.team-page[data-team-view="shifts"] .sessions-chip--count {
+  display: none;
+}
+
+.team-shifts__meta {
+  margin: 0 0 var(--spacing-16);
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b1);
+  font-weight: var(--text-body-b1-weight);
+  line-height: var(--text-body-b1-line-height);
+  text-align: right;
+}
+
+.team-shifts__scroll {
+  overflow-x: auto;
+}
+
+.team-shifts__grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(5, minmax(120px, 1fr));
+  min-width: 760px;
+  column-gap: var(--spacing-12);
+}
+
+.team-shifts__row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  box-sizing: border-box;
+  padding: var(--spacing-16) 0;
+  border-bottom: var(--border-width-default) solid var(--color-border-subtle);
+}
+
+.team-shifts__head {
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-14);
+  font-weight: var(--text-body-weight);
+  line-height: var(--text-body-line-height);
+}
+
+.team-shifts__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
+  text-align: center;
+}
+
+.team-shifts__hours,
+.team-shifts__total {
+  margin: 0;
+  color: var(--black-50);
+  font-family: var(--font);
+  font-size: var(--text-body-12);
+  font-weight: var(--text-body-weight);
+  line-height: var(--text-body-line-height);
+}
+
+.team-shifts__who {
+  min-width: 0;
+}
+
+.team-shifts__shift {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--spacing-8);
+  background: var(--green-700);
+  color: var(--green-200);
+  font-family: var(--font);
+  font-size: var(--text-body-14);
+  font-weight: var(--text-body-b1-medium-weight);
+  line-height: var(--text-body-line-height);
+  white-space: nowrap;
+}
+

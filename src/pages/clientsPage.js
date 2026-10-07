@@ -1,4 +1,4 @@
-import { renderPrimaryButton, renderSecondaryButton } from "/ds/src/components/button/button.js";
+import { renderPrimaryButton } from "/ds/src/components/button/button.js";
 import { renderSessionsChip } from "/ds/src/components/chip/chip.js";
 import {
   renderMobileMenu,
@@ -78,7 +78,7 @@ function renderClientsHeader() {
     title: "Clients list",
     body: "View, add, edit and delete your client's details.",
     titleExtra: renderSessionsChip({ label: "402", className: "sessions-chip--count" }),
-    actions: `${renderSecondaryButton({ label: "Options", icon: "chevron-down", iconPosition: "end" })}${renderPrimaryButton({ label: "Add", icon: "plus" }).replace("<button ", '<button data-sessions-add-client-open ')}`,
+    actions: renderPrimaryButton({ label: "Add", icon: "plus" }).replace("<button ", '<button data-sessions-add-client-open '),
   });
 }
 

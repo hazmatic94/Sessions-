@@ -4,6 +4,49 @@
   gap: var(--spacing-24);
 }
 
+.clients-page > .page-title {
+  margin-bottom: calc(42px - var(--spacing-24));
+}
+
+.clients-page > .sessions-filter-bar {
+  margin-bottom: calc(var(--spacing-24) * -1);
+}
+
+@media (max-width: 1200px) {
+  .clients-page .sessions-client-list {
+    grid-template-columns: max-content minmax(180px, 1.6fr) minmax(140px, 1fr) minmax(88px, 0.7fr);
+  }
+
+  .clients-page .sessions-client-list__row > :nth-child(5) {
+    display: none;
+  }
+}
+
+@media (max-width: 1000px) {
+  .clients-page .sessions-client-list {
+    grid-template-columns: max-content minmax(180px, 1.6fr) minmax(140px, 1fr);
+  }
+
+  .clients-page .sessions-client-list__row > :nth-child(4) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .clients-page .sessions-filter-bar,
+  .clients-page .sessions-client-list__head {
+    display: none;
+  }
+
+  .clients-page .sessions-client-list {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .clients-page .sessions-client-list__row > :nth-child(n + 3) {
+    display: none;
+  }
+}
+
 .clients-results {
   margin: 0;
   color: var(--black-50);
