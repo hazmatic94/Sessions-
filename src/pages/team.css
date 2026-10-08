@@ -4,12 +4,20 @@
   gap: var(--spacing-24);
 }
 
-.team-page__switch.sessions-tabs {
-  width: max-content;
-  max-width: 100%;
-  grid-template-columns: max-content max-content;
-  gap: var(--spacing-24);
-  padding: 0;
+.team-page[data-team-view="members"] > .page-title {
+  margin-bottom: calc(42px - var(--spacing-24));
+}
+
+.team-page [data-team-panel="members"] > .sessions-filter-bar {
+  margin-bottom: calc(var(--spacing-24) * -1);
+}
+
+.team-page .sessions-chip--count {
+  padding-inline: var(--spacing-8);
+  border-color: var(--green-700);
+  border-radius: 999px;
+  background: var(--green-700);
+  color: var(--joker-white-50);
 }
 
 .team-page [data-team-panel="members"]:not([hidden]) {
@@ -38,9 +46,23 @@
 
 .team-shifts__grid {
   display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) repeat(5, minmax(120px, 1fr));
-  min-width: 760px;
+  grid-template-columns: 280px repeat(var(--team-shift-days), 154px);
+  width: max-content;
   column-gap: var(--spacing-12);
+}
+
+.team-shifts__head > :first-child,
+.team-shifts__member {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  align-self: stretch;
+  background: var(--color-surface-base);
+}
+
+.team-shifts__head > :first-child {
+  display: flex;
+  align-items: center;
 }
 
 .team-shifts__row {
@@ -80,7 +102,42 @@
 }
 
 .team-shifts__who {
+  flex: 1;
   min-width: 0;
+}
+
+.team-shifts__member-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: var(--spacing-8) var(--spacing-12);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--spacing-12);
+}
+
+.team-shifts__edit {
+  display: inline-flex;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.team-shifts__member:hover .team-shifts__member-card,
+.team-shifts__member:focus-within .team-shifts__member-card {
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-hover);
+}
+
+.team-shifts__member:hover .team-shifts__edit,
+.team-shifts__member:focus-within .team-shifts__edit {
+  opacity: 1;
 }
 
 .team-shifts__shift {

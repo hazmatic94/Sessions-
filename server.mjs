@@ -50,6 +50,7 @@ const server = createServer((req, res) => {
   if (pathname === "/services") pathname = "/services.html";
   if (pathname === "/clients") pathname = "/clients.html";
   if (pathname === "/team") pathname = "/team.html";
+  if (pathname === "/settings") pathname = "/settings.html";
 
   const fromDesignSystem = pathname === "/ds" || pathname.startsWith("/ds/");
   const fromPages = pathname === "/src" || pathname.startsWith("/src/");

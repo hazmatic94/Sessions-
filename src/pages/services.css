@@ -18,6 +18,37 @@
   min-height: 0;
 }
 
+.services-page > .page-title {
+  margin-bottom: calc(42px - var(--spacing-24));
+}
+
+.services-page .sessions-chip--count {
+  padding-inline: var(--spacing-8);
+  border-color: var(--green-700);
+  border-radius: 999px;
+  background: var(--green-700);
+  color: var(--joker-white-50);
+}
+
+.services-page > .sessions-filter-bar {
+  margin-bottom: calc(var(--spacing-24) * -1);
+}
+
+.services-page:has(.services-empty) > .sessions-filter-bar {
+  margin-bottom: 0;
+}
+
+.services-results {
+  margin: 0;
+  color: var(--black-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b2);
+  font-weight: var(--text-body-b2-weight);
+  line-height: var(--text-body-b2-line-height);
+  letter-spacing: var(--text-body-b2-letter-spacing);
+  text-align: center;
+}
+
 .services-empty {
   display: flex;
   flex: 1;
@@ -52,9 +83,35 @@
   display: grid;
   place-items: center;
   padding: var(--spacing-24);
+}
+
+.sessions-modal-host::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--spacing-24) * -1);
   background: color-mix(in srgb, var(--black-900) 22%, transparent);
+  animation: sessions-modal-scrim-in var(--motion-fast) var(--ease-out);
+}
+
+.sessions-modal-host .sessions-modal {
+  z-index: 1;
 }
 
 .sessions-modal-host[hidden] {
   display: none;
+}
+
+.sessions-modal-host[data-modal-kind="delete"] .sessions-button--primary {
+  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
+  background: var(--joker-red-700);
+}
+
+.sessions-modal-host[data-modal-kind="delete"] .sessions-button--primary:hover:not(:disabled):not(.is-loading) {
+  border-color: color-mix(in srgb, var(--joker-red-600) 62%, white);
+  background: color-mix(in srgb, var(--joker-red-700) 94%, white);
+}
+
+.sessions-modal-host[data-modal-kind="delete"] .sessions-button--primary:active:not(:disabled):not(.is-loading) {
+  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
+  background: var(--joker-red-800);
 }

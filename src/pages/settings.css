@@ -1,0 +1,164 @@
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-24);
+}
+
+.settings-page > .page-title {
+  margin-bottom: calc(42px - var(--spacing-24));
+}
+
+.settings-account__row,
+.settings-account__danger {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-16);
+  border-bottom: var(--border-width-default) solid var(--color-border-subtle);
+}
+
+.settings-account__row {
+  min-height: 72px;
+  padding-block: var(--spacing-16);
+}
+
+.settings-account__label,
+.settings-account__danger-body {
+  color: var(--black-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b1);
+  font-weight: var(--text-body-b1-weight);
+  line-height: var(--text-body-b1-line-height);
+  letter-spacing: var(--text-body-b1-letter-spacing);
+}
+
+.settings-account__value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-8);
+  margin-left: auto;
+  min-width: 0;
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b1);
+  font-weight: var(--text-body-b1-weight);
+  line-height: var(--text-body-b1-line-height);
+  letter-spacing: var(--text-body-b1-letter-spacing);
+  text-align: right;
+}
+
+.settings-account__reveal {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--black-50);
+  cursor: pointer;
+}
+
+.settings-account__reveal:hover {
+  color: var(--joker-white-50);
+}
+
+.settings-account__danger {
+  justify-content: space-between;
+  padding-block: var(--spacing-24);
+}
+
+.settings-account__danger-title,
+.settings-account__danger-body {
+  margin: 0;
+}
+
+.settings-account__danger-title {
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b1);
+  font-weight: var(--text-body-b1-medium-weight);
+  line-height: var(--text-body-b1-line-height);
+  letter-spacing: var(--text-body-b1-letter-spacing);
+}
+
+.settings-account__danger-body {
+  margin-top: var(--spacing-4);
+}
+
+.settings-account__delete.sessions-button--primary {
+  /* same width as a modal action button: (452 modal − borders − padding − gap) / 2 */
+  flex: none;
+  width: calc((452px - var(--border-width-default) * 2 - var(--spacing-32) * 2 - var(--spacing-24)) / 2);
+  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
+  background: var(--joker-red-700);
+}
+
+.settings-account__delete.sessions-button--primary:hover:not(:disabled):not(.is-loading) {
+  border-color: color-mix(in srgb, var(--joker-red-600) 62%, white);
+  background: color-mix(in srgb, var(--joker-red-700) 94%, white);
+}
+
+.settings-account__delete.sessions-button--primary:active:not(:disabled):not(.is-loading) {
+  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
+  background: var(--joker-red-800);
+}
+
+.settings-delete,
+.settings-edit {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-24);
+}
+
+.settings-delete[hidden],
+.settings-edit[hidden] {
+  display: none;
+}
+
+.settings-delete__scrim,
+.settings-edit__scrim {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--black-900) 22%, transparent);
+  cursor: pointer;
+  animation: sessions-modal-scrim-in var(--motion-fast) var(--ease-out);
+}
+
+.settings-delete .sessions-modal,
+.settings-edit .sessions-modal {
+  z-index: 1;
+}
+
+.settings-edit .sessions-modal__copy {
+  padding-right: 0;
+}
+
+.settings-edit .sessions-modal__title,
+.settings-edit .sessions-modal__body {
+  padding-right: calc(24px + var(--spacing-12));
+}
+
+.settings-edit .sessions-input {
+  width: 100%;
+  max-width: none;
+  margin-top: var(--spacing-16);
+}
+
+.settings-delete .sessions-button--primary {
+  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
+  background: var(--joker-red-700);
+}
+
+.settings-delete .sessions-button--primary:hover:not(:disabled):not(.is-loading) {
+  border-color: color-mix(in srgb, var(--joker-red-600) 62%, white);
+  background: color-mix(in srgb, var(--joker-red-700) 94%, white);
+}
+
+.settings-delete .sessions-button--primary:active:not(:disabled):not(.is-loading) {
+  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
+  background: var(--joker-red-800);
+}

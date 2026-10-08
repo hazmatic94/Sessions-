@@ -4,6 +4,7 @@ const PRIMARY_NAV_HREFS = {
   Services: "/services",
   Clients: "/clients",
   Team: "/team",
+  Settings: "/settings",
 };
 
 function bindPageTransition() {
@@ -53,5 +54,15 @@ export function linkPrimaryNav(root, { selected } = {}) {
     if (link.classList.contains("is-selected")) link.setAttribute("aria-current", "page");
     link.innerHTML = node.innerHTML;
     node.replaceWith(link);
+  });
+
+  root.querySelectorAll(".sessions-menu-item").forEach((item) => {
+    if (item.querySelector(".sessions-menu-item__label")?.textContent !== "Account settings") return;
+    if (item.tagName === "A") return;
+    const link = document.createElement("a");
+    link.className = item.className;
+    link.href = "/settings";
+    link.innerHTML = item.innerHTML;
+    item.replaceWith(link);
   });
 }

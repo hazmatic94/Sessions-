@@ -8,6 +8,14 @@
   margin-bottom: calc(42px - var(--spacing-24));
 }
 
+.clients-page .sessions-chip--count {
+  padding-inline: var(--spacing-8);
+  border-color: var(--green-700);
+  border-radius: 999px;
+  background: var(--green-700);
+  color: var(--joker-white-50);
+}
+
 .clients-page > .sessions-filter-bar {
   margin-bottom: calc(var(--spacing-24) * -1);
 }
@@ -51,10 +59,55 @@
   margin: 0;
   color: var(--black-50);
   font-family: var(--font);
-  font-size: var(--text-body-b1);
-  font-weight: var(--text-body-b1-weight);
-  line-height: var(--text-body-b1-line-height);
-  letter-spacing: var(--text-body-b1-letter-spacing);
+  font-size: var(--text-body-b2);
+  font-weight: var(--text-body-b2-weight);
+  line-height: var(--text-body-b2-line-height);
+  letter-spacing: var(--text-body-b2-letter-spacing);
   text-align: center;
+}
+
+.clients-delete {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-24);
+}
+
+.clients-delete[hidden] {
+  display: none;
+}
+
+.clients-delete__scrim {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--black-900) 22%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  cursor: pointer;
+  animation: sessions-modal-scrim-in var(--motion-fast) var(--ease-out);
+}
+
+.clients-delete .sessions-modal {
+  z-index: 1;
+}
+
+.clients-delete .sessions-button--primary {
+  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
+  background: var(--joker-red-700);
+}
+
+.clients-delete .sessions-button--primary:hover:not(:disabled):not(.is-loading) {
+  border-color: color-mix(in srgb, var(--joker-red-600) 62%, white);
+  background: color-mix(in srgb, var(--joker-red-700) 94%, white);
+}
+
+.clients-delete .sessions-button--primary:active:not(:disabled):not(.is-loading) {
+  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
+  background: var(--joker-red-800);
 }
 

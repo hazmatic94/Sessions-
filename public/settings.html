@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Services · Sessions</title>
+    <title>Account · Sessions</title>
     <meta name="theme-color" content="#0f0f0f" />
     <link rel="icon" href="/assets/sessions-favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/ds/src/styles/fonts.css" />
@@ -11,21 +11,21 @@
     <link rel="stylesheet" href="/ds/src/styles/navigation.css" />
     <link rel="stylesheet" href="/ds/src/styles/avatar.css" />
     <link rel="stylesheet" href="/ds/src/styles/button.css" />
-    <link rel="stylesheet" href="/ds/src/styles/input.css" />
-    <link rel="stylesheet" href="/ds/src/styles/search.css" />
     <link rel="stylesheet" href="/ds/src/styles/menu.css" />
+    <link rel="stylesheet" href="/ds/src/styles/input.css" />
     <link rel="stylesheet" href="/ds/src/styles/modal.css" />
     <link rel="stylesheet" href="/ds/src/styles/patterns.css" />
+    <link rel="stylesheet" href="/ds/src/styles/notification.css" />
     <link rel="stylesheet" href="/src/components/pageWrapper.css" />
     <link rel="stylesheet" href="/src/pages/home.css" />
-    <link rel="stylesheet" href="/src/pages/services.css" />
+    <link rel="stylesheet" href="/src/pages/settings.css" />
   </head>
   <body>
     <div id="app"></div>
     <script type="module">
-      import { mountServicesPage } from "/src/pages/servicesPage.js";
+      import { mountSettingsPage } from "/src/pages/settingsPage.js";
 
-      mountServicesPage(document.querySelector("#app"));
+      mountSettingsPage(document.querySelector("#app"));
     </script>
   </body>
 </html>

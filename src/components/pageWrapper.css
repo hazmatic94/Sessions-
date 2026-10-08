@@ -29,12 +29,3 @@
   align-items: center;
   gap: var(--spacing-8);
 }
-
-.sessions-page-header__body .page-title__link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--color-text-brand);
-  font: inherit;
-  cursor: pointer;
-}

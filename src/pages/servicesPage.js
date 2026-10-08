@@ -1,4 +1,5 @@
 import { renderPrimaryButton, renderSecondaryButton } from "/ds/src/components/button/button.js";
+import { renderSessionsChip } from "/ds/src/components/chip/chip.js";
 import {
   renderMobileMenu,
   renderSessionsLeftRail,
@@ -6,8 +7,9 @@ import {
   setupSessionsProfileMenu,
 } from "/ds/src/components/navigation/index.js";
 import { renderSessionsAddServiceDrawer, setupSessionsAddService } from "/ds/src/components/patterns/addService.js";
+import { renderSessionsFilterBar, setupSessionsFilterBars } from "/ds/src/components/patterns/filterBar.js";
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
-import { renderSessionsServiceList, renderSessionsServiceListRow, setupSessionsServiceLists } from "/ds/src/components/rows/serviceListRow.js";
+import { renderSessionsServiceList, setupSessionsServiceLists } from "/ds/src/components/rows/serviceListRow.js";
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
@@ -19,6 +21,18 @@ const navOptions = {
 
 const SERVICES_KEY = "sessions.services";
 
+const SERVICE_SORTS = [
+  { value: "name-az", label: "Name (A-Z)" },
+  { value: "name-za", label: "Name (Z-A)" },
+  { value: "price-low", label: "Price (low to high)" },
+  { value: "price-high", label: "Price (high to low)" },
+  { value: "duration-short", label: "Duration (shortest first)" },
+  { value: "duration-long", label: "Duration (longest first)" },
+];
+
+let serviceQuery = "";
+let serviceSort = "name-az";
+
 function storedServices() {
   try {
     const parsed = JSON.parse(localStorage.getItem(SERVICES_KEY) || "[]");
@@ -29,17 +43,77 @@ function storedServices() {
   }
 }
 
-function rememberServices(root) {
-  const rows = [...root.querySelectorAll(".services-page .sessions-service-list__row:not(.sessions-service-list__head)")];
+function writeServices(services) {
   try {
-    localStorage.setItem(SERVICES_KEY, JSON.stringify(rows.map(readServiceRow)));
+    localStorage.setItem(SERVICES_KEY, JSON.stringify(services));
   } catch {
     // ponytail: storage can be blocked; the list still lives for this page view
   }
 }
 
+function serviceKey(service) {
+  return [service.name, service.description, service.duration, service.priceType, service.price].join("\0");
+}
+
+function serviceMatches(service, query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return `${service.name} ${service.description} ${service.duration}`.toLowerCase().includes(q);
+}
+
+// ponytail: duration labels are "N min", "N hr", or "N hr M min"; anything else sorts as 0
+function durationMinutes(label) {
+  const hours = /(\d+)\s*hr/.exec(label);
+  const mins = /(\d+)\s*min/.exec(label);
+  return (hours ? Number(hours[1]) * 60 : 0) + (mins ? Number(mins[1]) : 0);
+}
+
+function visibleServices(services) {
+  const rows = services.filter((service) => serviceMatches(service, serviceQuery));
+  const next = [...rows];
+  const name = (row) => row.name.toLowerCase();
+  const price = (row) => (row.priceType === "free" ? 0 : Number(row.price) || 0);
+  if (serviceSort === "name-za") next.sort((a, b) => name(b).localeCompare(name(a)));
+  else if (serviceSort === "price-low") next.sort((a, b) => price(a) - price(b) || name(a).localeCompare(name(b)));
+  else if (serviceSort === "price-high") next.sort((a, b) => price(b) - price(a) || name(a).localeCompare(name(b)));
+  else if (serviceSort === "duration-short") next.sort((a, b) => durationMinutes(a.duration) - durationMinutes(b.duration) || name(a).localeCompare(name(b)));
+  else if (serviceSort === "duration-long") next.sort((a, b) => durationMinutes(b.duration) - durationMinutes(a.duration) || name(a).localeCompare(name(b)));
+  else next.sort((a, b) => name(a).localeCompare(name(b)));
+  return next;
+}
+
+function refreshServices(root) {
+  const services = storedServices();
+  const rows = visibleServices(services);
+  const page = root.querySelector(".services-page");
+  if (!page) return;
+  const current = page.querySelector(".sessions-service-list, .services-empty");
+  const next = rows.length ? renderSessionsServiceList({ rows }) : renderServicesEmpty();
+  if (current) current.outerHTML = next;
+  else page.querySelector(".services-results")?.insertAdjacentHTML("beforebegin", next);
+  const chip = page.querySelector(".sessions-chip--count");
+  if (chip) chip.textContent = String(services.length);
+  const results = page.querySelector(".services-results");
+  if (results) results.textContent = rows.length ? `Viewing 1 – ${rows.length} of ${services.length} results` : "Viewing 0 results";
+}
+
+function renderServicesHeader(count) {
+  return renderPageTitle({
+    title: "Services",
+    body: "View and manage the services offered by your business.",
+    titleExtra: renderSessionsChip({ label: String(count), className: "sessions-chip--count" }),
+    actions: renderPrimaryButton({ label: "Add", icon: "plus" }).replace("<button ", '<button data-sessions-add-service-open '),
+  });
+}
+
+function renderServicesResults(shown, total) {
+  const text = shown ? `Viewing 1 – ${shown} of ${total} results` : "Viewing 0 results";
+  return `<p class="services-results">${text}</p>`;
+}
+
 export function renderServicesPage() {
   const services = storedServices();
+  const rows = visibleServices(services);
   return `
     <div class="home-shell">
       <div id="mobile-nav" class="home-shell__mobile"></div>
@@ -48,11 +122,12 @@ export function renderServicesPage() {
         <div class="home-shell__rail" id="rail"></div>
         <main class="home-shell__main">
           ${renderPageWrapper({
-            content: `<div class="services-page">${renderPageTitle({
-              title: "Service menu",
-              bodyMarkup: `<p class="sessions-page-header__body">View and manage the services offered by your business. <button type="button" class="page-title__link">Learn more</button></p>`,
-              actions: `${renderSecondaryButton({ label: "Options", icon: "chevron-down", iconPosition: "end" })}${renderPrimaryButton({ label: "Add", icon: "plus" }).replace("<button ", '<button data-sessions-add-service-open ')}`,
-            })}${services.length ? renderSessionsServiceList({ rows: services }) : renderServicesEmpty()}</div>`,
+            content: `<div class="services-page">${renderServicesHeader(services.length)}${renderSessionsFilterBar({
+              placeholder: "Search services",
+              name: "service-search",
+              sortLabel: "Name (A-Z)",
+              sortOptions: SERVICE_SORTS,
+            })}${rows.length ? renderSessionsServiceList({ rows }) : renderServicesEmpty()}${renderServicesResults(rows.length, services.length)}</div>`,
           })}
         </main>
       </div>
@@ -90,7 +165,17 @@ export function mountServicesPage(root) {
   bindMobileMenu(root);
   linkPrimaryNav(root, { selected: "Services" });
   setupSessionsAddService(root);
+  setupSessionsFilterBars(root);
   setupSessionsServiceLists(root);
+  root.addEventListener("input", (event) => {
+    if (event.target.name !== "service-search") return;
+    serviceQuery = event.target.value;
+    refreshServices(root);
+  });
+  root.addEventListener("sessions:filter-sort", (event) => {
+    serviceSort = event.detail.value;
+    refreshServices(root);
+  });
   bindServiceCreate(root);
   bindServiceModal(root);
 }
@@ -110,13 +195,18 @@ function bindServiceCreate(root) {
       priceType: String(data.get("priceType") || "fixed"),
       price: String(data.get("price") || "0.00"),
     };
+    const services = storedServices();
     if (editingRow?.isConnected) {
-      editingRow.outerHTML = renderSessionsServiceListRow(service);
+      const current = readServiceRow(editingRow);
+      const index = services.findIndex((item) => serviceKey(item) === serviceKey(current));
+      if (index >= 0) services[index] = service;
+      else services.push(service);
       editingRow = null;
     } else {
-      addServiceRow(root, service);
+      services.push(service);
     }
-    rememberServices(root);
+    writeServices(services);
+    refreshServices(root);
     form.reset();
     root.querySelectorAll("[data-sessions-add-service] .sessions-add-service__counted").forEach((counted) => {
       const field = counted.querySelector(".sessions-input__field");
@@ -287,25 +377,13 @@ function syncServiceCounts(root) {
 }
 
 function removeServiceRow(root, row) {
-  const list = row?.closest(".sessions-service-list");
-  row?.remove();
-  if (!list?.querySelector(".sessions-service-list__row:not(.sessions-service-list__head)")) {
-    list?.remove();
-    root.querySelector(".services-page")?.insertAdjacentHTML("beforeend", renderServicesEmpty());
-  }
-  rememberServices(root);
-}
-
-function addServiceRow(root, service) {
-  const page = root.querySelector(".services-page");
-  const list = page?.querySelector(".sessions-service-list");
-  if (!page) return;
-  if (!list) {
-    page.querySelector(".services-empty")?.remove();
-    page.insertAdjacentHTML("beforeend", renderSessionsServiceList({ rows: [service] }));
-    return;
-  }
-  list.insertAdjacentHTML("beforeend", renderSessionsServiceListRow(service));
+  if (!row) return;
+  const current = readServiceRow(row);
+  const services = storedServices();
+  const index = services.findIndex((item) => serviceKey(item) === serviceKey(current));
+  if (index >= 0) services.splice(index, 1);
+  writeServices(services);
+  refreshServices(root);
 }
 
 function setMobileMenuOpen(device, open) {

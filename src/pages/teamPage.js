@@ -1,8 +1,6 @@
 import { renderSessionsAvatar } from "/ds/src/components/avatar/avatar.js";
-import { renderPrimaryButton } from "/ds/src/components/button/button.js";
+import { renderPrimaryButton, renderSecondaryButton } from "/ds/src/components/button/button.js";
 import { renderSessionsChip } from "/ds/src/components/chip/chip.js";
-import { applySessionsTabSelection } from "/ds/src/components/tabs/interactions.js";
-import { renderSessionsTabs } from "/ds/src/components/tabs/tabs.js";
 import { escapeHtml } from "/ds/src/utils.js";
 import {
   renderMobileMenu,
@@ -56,20 +54,22 @@ function renderTeamHeader() {
     title: VIEW_COPY.members.title,
     body: VIEW_COPY.members.body,
     titleExtra: renderSessionsChip({ label: String(TEAM.length), className: "sessions-chip--count" }),
-    actions: renderPrimaryButton({ label: "Add", icon: "plus" }),
+    actions: `${renderSecondaryButton({ label: "Shifts" }).replace("<button ", '<button data-team-view-toggle ')}${renderPrimaryButton({ label: "Add", icon: "plus" })}`,
   });
 }
 
-function weekdayDates(from = new Date()) {
+function weekdayDates(from = new Date(), weeks = 2) {
   const monday = new Date(from);
   monday.setHours(12, 0, 0, 0);
   const day = monday.getDay();
   monday.setDate(monday.getDate() + (day === 0 ? -6 : 1 - day));
-  return Array.from({ length: 5 }, (_, index) => {
+  const days = [];
+  for (let index = 0; index < weeks * 7; index += 1) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + index);
-    return date;
-  });
+    if (date.getDay() !== 0 && date.getDay() !== 6) days.push(date);
+  }
+  return days;
 }
 
 function formatDay(date) {
@@ -78,15 +78,15 @@ function formatDay(date) {
   return `${weekday}, ${month} ${date.getDate()}`;
 }
 
-function renderShiftRow(member) {
+function renderShiftRow(member, dayCount) {
   const avatar = renderSessionsAvatar({
     src: member.avatarSrc,
     name: member.name,
     initial: member.avatarInitial || member.name,
     size: "small",
   });
-  const shifts = Array.from({ length: 5 }, () => `<span class="team-shifts__shift">${SHIFT_LABEL}</span>`).join("");
-  return `<div class="team-shifts__row"><div class="sessions-list__person team-shifts__member">${avatar}<div class="team-shifts__who"><p class="sessions-team-list__name">${escapeHtml(member.name)}</p><p class="team-shifts__total">${SHIFT_HOURS * 5} hr</p></div></div>${shifts}</div>`;
+  const shifts = Array.from({ length: dayCount }, () => `<span class="team-shifts__shift">${SHIFT_LABEL}</span>`).join("");
+  return `<div class="team-shifts__row"><div class="sessions-list__person team-shifts__member"><div class="team-shifts__member-card">${avatar}<div class="team-shifts__who"><p class="sessions-team-list__name">${escapeHtml(member.name)}</p><p class="team-shifts__total">${SHIFT_HOURS * dayCount} hr</p></div><button class="team-shifts__edit" type="button" aria-label="Edit shifts"><img src="/assets/IconEdit.svg" width="20" height="20" alt="" /></button></div></div>${shifts}</div>`;
 }
 
 function renderShifts() {
@@ -96,9 +96,9 @@ function renderShifts() {
     .map((date) => `<span class="team-shifts__day">${formatDay(date)}<span class="team-shifts__hours">${dayTotal}</span></span>`)
     .join("");
   const start = days[0].toLocaleDateString("en-AU", { day: "numeric", month: "short" });
-  const end = days[4].toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+  const end = days.at(-1).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
 
-  return `<div class="team-shifts" data-team-panel="shifts" hidden><p class="team-shifts__meta">This week · ${start} – ${end}</p><div class="team-shifts__scroll"><div class="team-shifts__grid"><div class="team-shifts__row team-shifts__head"><span>Team member</span>${headings}</div>${TEAM.map(renderShiftRow).join("")}</div></div></div>`;
+  return `<div class="team-shifts" data-team-panel="shifts" hidden><p class="team-shifts__meta">${start} – ${end}</p><div class="team-shifts__scroll"><div class="team-shifts__grid" style="--team-shift-days: ${days.length}"><div class="team-shifts__row team-shifts__head"><span>Team member</span>${headings}</div>${TEAM.map((member) => renderShiftRow(member, days.length)).join("")}</div></div></div>`;
 }
 
 export function renderTeamPage() {
@@ -110,13 +110,7 @@ export function renderTeamPage() {
         <div class="home-shell__rail" id="rail"></div>
         <main class="home-shell__main">
           ${renderPageWrapper({
-            content: `<div class="team-page" data-team-view="members">${renderTeamHeader()}${renderSessionsTabs({
-              className: "team-page__switch",
-              tabs: [
-                { label: "Team members", value: "members", selected: true },
-                { label: "Scheduled shifts", value: "shifts" },
-              ],
-            })}<div data-team-panel="members">${renderSessionsFilterBar({
+            content: `<div class="team-page" data-team-view="members">${renderTeamHeader()}<div data-team-panel="members">${renderSessionsFilterBar({
               placeholder: "Search team members",
               name: "team-search",
               sortLabel: "Custom order",
@@ -152,14 +146,15 @@ function showTeamView(page, view) {
   });
   page.querySelector(".sessions-page-header__title").textContent = copy.title;
   page.querySelector(".sessions-page-header__body").textContent = copy.body;
-  applySessionsTabSelection(page.querySelector(".team-page__switch"), page.dataset.teamView);
+  const toggle = page.querySelector("[data-team-view-toggle] .sessions-button__label");
+  if (toggle) toggle.textContent = page.dataset.teamView === "shifts" ? "Team" : "Shifts";
 }
 
 function bindTeamView(root) {
   const page = root.querySelector(".team-page");
   page.addEventListener("click", (event) => {
-    const tab = event.target.closest(".team-page__switch [role='tab']");
-    if (tab) showTeamView(page, tab.dataset.tabValue);
+    if (!event.target.closest("[data-team-view-toggle]")) return;
+    showTeamView(page, page.dataset.teamView === "shifts" ? "members" : "shifts");
   });
   root.addEventListener("click", (event) => {
     if (event.target.closest("[data-sessions-team-action='shifts']")) showTeamView(page, "shifts");
