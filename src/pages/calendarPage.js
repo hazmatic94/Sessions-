@@ -32,12 +32,9 @@ import {
   setupSessionsStaffHeaders,
 } from "/ds/src/components/patterns/staffHeader.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+import { outsideQuarters, SHIFT_TEAM, shiftLabel, shiftOn } from "/src/pages/shiftStore.js";
 
-const STAFF = [
-  { name: "Larry June", avatarSrc: "/assets/user.png" },
-  { name: "Marcus Bell", avatarInitial: "M" },
-  { name: "Sofia Reyes", avatarInitial: "S" },
-];
+const STAFF = SHIFT_TEAM;
 
 const navOptions = {
   href: "/",
@@ -48,9 +45,38 @@ const OPEN_FROM_HOUR = 9;
 const OPEN_UNTIL_HOUR = 18;
 const CLOSED_QUARTERS = [0, 15, 30, 45];
 
-function outsideMinutesForHour(hour) {
-  if (hour >= OPEN_FROM_HOUR && hour < OPEN_UNTIL_HOUR) return [];
-  return CLOSED_QUARTERS;
+function outsideMinutesForHour(name, date, hour) {
+  const block = shiftOn(name, date);
+  if (!block) {
+    if (hour >= OPEN_FROM_HOUR && hour < OPEN_UNTIL_HOUR) return [];
+    return CLOSED_QUARTERS;
+  }
+  return outsideQuarters(block, hour);
+}
+
+function paintCalendarHours(root) {
+  const staff = visibleStaff(root);
+  const date = calendarStartDate(root);
+  const hours = root.querySelector("#hour-column");
+  if (!hours) return;
+  hours.innerHTML = `${Array.from({ length: HOUR_COUNT }, (_, hour) => {
+    const columns = Array.from({ length: 7 }, (_, index) => {
+      const person = staff[index];
+      const column = renderSessionsHourColumn({
+        hour,
+        outsideMinutes: person ? outsideMinutesForHour(person.name, date, hour) : CLOSED_QUARTERS,
+      });
+      return index < staff.length
+        ? column
+        : column.replace("sessions-hour-column", "sessions-hour-column is-day-extra");
+    }).join("");
+    return `<div class="calendar-hour">${renderSessionsHourLabel({
+      hour,
+      minute: 0,
+    })}${columns}</div>`;
+  }).join("")}${renderSessionsCurrentTimeIndicator()}`;
+  setupSessionsCurrentTimeIndicators(root);
+  placeCurrentTime(root);
 }
 
 export function renderCalendarPage() {
@@ -84,25 +110,10 @@ export function mountCalendarPage(root) {
   root.querySelector("#mobile-nav").innerHTML = renderMobileMenu(navOptions);
   root.querySelector("#calendar-header").innerHTML = renderSessionsCalendarHeaderRow({
     team: STAFF,
-    youName: "Larry June",
+    youName: "Harry Maher",
   });
   root.querySelector("#staff-header").innerHTML = renderStaffHeader(STAFF);
-  const hours = root.querySelector("#hour-column");
-  hours.innerHTML = `${Array.from({ length: HOUR_COUNT }, (_, hour) => {
-    const columns = Array.from({ length: 7 }, (_, index) => {
-      const column = renderSessionsHourColumn({
-        hour,
-        outsideMinutes: outsideMinutesForHour(hour),
-      });
-      return index < STAFF.length
-        ? column
-        : column.replace("sessions-hour-column", "sessions-hour-column is-day-extra");
-    }).join("");
-    return `<div class="calendar-hour">${renderSessionsHourLabel({
-      hour,
-      minute: 0,
-    })}${columns}</div>`;
-  }).join("")}${renderSessionsCurrentTimeIndicator()}`;
+  paintCalendarHours(root);
   applyCalendarLayout(root, "day");
   scrollCalendarToDate(root, calendarStartDate(root));
   setupSessionsCurrentTimeIndicators(root);
@@ -151,14 +162,7 @@ function applySelectedStaff(root) {
   if (stage) stage.style.setProperty("--sessions-staff-count", String(staff.length));
   const header = root.querySelector("#staff-header");
   if (header) header.innerHTML = renderStaffHeader(staff);
-  root.querySelectorAll(".calendar-hour").forEach((row) => {
-    let index = 0;
-    [...row.children].forEach((column) => {
-      if (!column.classList.contains("sessions-hour-column")) return;
-      column.classList.toggle("is-day-extra", index >= staff.length);
-      index += 1;
-    });
-  });
+  paintCalendarHours(root);
   const staffDays = root.querySelector("#staff-days");
   if (staffDays && !staffDays.hidden) {
     const stageView = stage?.classList.contains("is-view-week")
@@ -201,12 +205,32 @@ function applyCalendarLayout(root, view) {
     week: isWeek,
   });
   if (staffDays) {
+    const staff = visibleStaff(root);
     staffDays.innerHTML = renderSessionsStaffDayBoard({
-      staff: visibleStaff(root),
+      staff,
       start: selected,
       week: isWeek,
     });
+    markShiftDays(staffDays, staff);
   }
+}
+
+function markShiftDays(board, staff) {
+  [...board.querySelectorAll(".sessions-staff-day")].forEach((row, index) => {
+    const person = staff[index];
+    if (!person) return;
+    row.querySelectorAll("[data-sessions-staff-day]").forEach((cell) => {
+      const block = shiftOn(person.name, cell.dataset.sessionsStaffDay);
+      if (!block) return;
+      cell.classList.toggle("is-closed", block.kind !== "shift");
+      cell.querySelector(".calendar-shift-hours")?.remove();
+      if (block.kind !== "shift") return;
+      const label = document.createElement("span");
+      label.className = "calendar-shift-hours";
+      label.textContent = shiftLabel(block);
+      cell.append(label);
+    });
+  });
 }
 
 function setCalendarDate(root, date) {
@@ -265,6 +289,7 @@ function bindCalendarLayout(root) {
       : stage?.classList.contains("is-view-3day")
         ? "3day"
         : "";
+    paintCalendarHours(root);
     if (view) applyCalendarLayout(root, view);
     scrollCalendarToDate(root, date);
   });

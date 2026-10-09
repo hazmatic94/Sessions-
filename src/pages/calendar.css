@@ -67,6 +67,17 @@
   border-left: var(--border-width-default) solid var(--color-border-subtle);
 }
 
+.calendar-shift-hours {
+  display: block;
+  padding: var(--spacing-8);
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-12);
+  font-weight: var(--text-body-b1-medium-weight);
+  line-height: var(--text-body-line-height);
+  pointer-events: none;
+}
+
 .calendar-stage.is-view-3day #staff-header,
 .calendar-stage.is-view-week #staff-header {
   display: none;
@@ -86,5 +97,6 @@
 @media (max-width: 768px) {
   .calendar-stage {
     padding-top: var(--mobile-menu-height);
+    padding-inline: 24px;
   }
 }

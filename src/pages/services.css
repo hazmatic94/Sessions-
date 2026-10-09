@@ -24,9 +24,9 @@
 
 .services-page .sessions-chip--count {
   padding-inline: var(--spacing-8);
-  border-color: var(--green-700);
-  border-radius: 999px;
-  background: var(--green-700);
+  border-color: var(--green-500);
+  border-radius: var(--spacing-8);
+  background: var(--color-surface-panel);
   color: var(--joker-white-50);
 }
 

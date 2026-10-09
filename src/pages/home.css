@@ -133,8 +133,8 @@ body {
   }
 
   .home-shell .page-wrapper {
-    padding: 20px;
-    padding-top: calc(var(--mobile-menu-height) + 20px);
+    padding: 32px 24px;
+    padding-top: calc(var(--mobile-menu-height) + 32px);
   }
 
   .home-card-stack,
@@ -173,8 +173,13 @@ body {
     z-index: 2;
   }
 
+  .home-shell__mobile .mobile-menu__toggle .sessions-rail-item__icon {
+    width: calc(var(--icon-size-lg) + 8px);
+    height: calc(var(--icon-size-lg) + 8px);
+  }
+
   .home-shell__mobile .mobile-menu,
-  .home-shell__mobile .mobile-menu-panel {
+  .home-shell__mobile .mobile-menu-device.is-open .mobile-menu-panel {
     pointer-events: auto;
   }
 
