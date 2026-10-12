@@ -160,29 +160,9 @@ function bindDeleteClient(root) {
   const dialog = () => root.querySelector("[data-sessions-delete-client]");
 
   const closeDelete = () => {
+    pendingName = "";
     const modal = dialog();
-    if (!modal) return;
-    const finish = () => {
-      modal.classList.remove("is-closing");
-      modal.hidden = true;
-      pendingName = "";
-    };
-    const mobile = window.matchMedia("(max-width: 768px)").matches;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (modal.hidden || !mobile || reduce || modal.classList.contains("is-closing")) {
-      finish();
-      return;
-    }
-    const panel = modal.querySelector(".sessions-modal");
-    modal.classList.add("is-closing");
-    panel?.addEventListener(
-      "animationend",
-      (event) => {
-        if (event.target === panel) finish();
-      },
-      { once: true },
-    );
-    window.setTimeout(finish, 400);
+    if (modal) modal.hidden = true;
   };
 
   const confirmDelete = () => {
