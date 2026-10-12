@@ -72,8 +72,15 @@
   margin-bottom: var(--spacing-8);
 }
 
-.services-empty .sessions-page-header__body {
-  margin-bottom: var(--spacing-24);
+@media (max-width: 768px) {
+  .services-page > .sessions-filter-bar {
+    display: none;
+  }
+
+  .services-empty {
+    border: 0;
+    border-radius: 0;
+  }
 }
 
 .sessions-modal-host {
