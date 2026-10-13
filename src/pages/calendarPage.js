@@ -4,7 +4,8 @@ import {
   renderTopNav,
   setupSessionsProfileMenu,
 } from "/ds/src/components/navigation/index.js";
-import { applySessionsCalendarSelection } from "/ds/src/components/calendar/calendar.js";
+import { applySessionsCalendarSelection, renderSessionsStackedCalendar } from "/ds/src/components/calendar/calendar.js";
+import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { setupSessionsCalendars } from "/ds/src/components/calendar/interactions.js";
 import {
   formatCalendarHeaderMobileDate,
@@ -16,6 +17,7 @@ import { renderSessionsStaffDayBoard } from "/ds/src/components/patterns/staffDa
 import {
   addNavigatorDays,
   formatNavigatorDate,
+  parseNavigatorDate,
   setupSessionsNavigators,
   toNavigatorDateValue,
 } from "/ds/src/components/patterns/navigator.js";
@@ -32,6 +34,7 @@ import {
   setupSessionsStaffHeaders,
 } from "/ds/src/components/patterns/staffHeader.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+import { bindCalendarClientPicker, renderCalendarClientPicker } from "/src/pages/calendarClientPicker.js";
 import { outsideQuarters, SHIFT_TEAM, shiftLabel, shiftOn } from "/src/pages/shiftStore.js";
 
 const STAFF = SHIFT_TEAM;
@@ -67,7 +70,10 @@ function paintCalendarHours(root) {
         outsideMinutes: person ? outsideMinutesForHour(person.name, date, hour) : CLOSED_QUARTERS,
       });
       return index < staff.length
-        ? column
+        ? column.replace(
+            "data-sessions-hour-column",
+            `data-sessions-hour-column data-calendar-staff="${person.name}"`,
+          )
         : column.replace("sessions-hour-column", "sessions-hour-column is-day-extra");
     }).join("");
     return `<div class="calendar-hour">${renderSessionsHourLabel({
@@ -94,10 +100,47 @@ export function renderCalendarPage() {
             <div id="staff-days" class="sessions-staff-days" hidden></div>
             <div id="hour-column" class="calendar-hours"></div>
           </main>
+          <div data-sessions-slot-menu-mount></div>
         </div>
       </div>
+      ${renderCalendarDateSheet()}
+      ${renderCalendarAppointmentSheet()}
+      ${renderCalendarClientPicker()}
     </div>
   `;
+}
+
+function renderCalendarDateSheet() {
+  const modal = renderSessionsModal({
+    bodyMarkup: `<div data-calendar-date-sheet-body></div>`,
+    primaryLabel: "",
+    secondaryLabel: "",
+  }).replace(
+    'role="dialog" aria-modal="true"',
+    'role="dialog" aria-modal="true" aria-label="Choose a date"',
+  );
+
+  return `<div class="calendar-date-sheet" data-calendar-date-sheet hidden><button class="calendar-date-sheet__scrim" type="button" aria-label="Close"></button>${modal}</div>`;
+}
+
+function renderCalendarAppointmentSheet() {
+  const modal = renderSessionsModal({
+    title: "Add appointment",
+    bodyMarkup: `<p class="sessions-modal__body" data-calendar-appointment-context></p>`,
+    secondaryLabel: "Cancel",
+    primaryLabel: "Save",
+  })
+    .replace(
+      'class="sessions-button sessions-button--secondary"',
+      'class="sessions-button sessions-button--secondary" data-calendar-appointment-cancel',
+    )
+    .replace(
+      'class="sessions-button sessions-button--primary"',
+      'class="sessions-button sessions-button--primary" data-calendar-appointment-save',
+    )
+    .replace('class="sessions-modal__close"', 'class="sessions-modal__close" data-calendar-appointment-cancel');
+
+  return `<div class="calendar-date-sheet calendar-appointment-sheet" data-calendar-appointment-sheet hidden><button class="calendar-date-sheet__scrim" type="button" data-calendar-appointment-cancel aria-label="Close"></button>${modal}</div>`;
 }
 
 export function mountCalendarPage(root) {
@@ -115,7 +158,6 @@ export function mountCalendarPage(root) {
   root.querySelector("#staff-header").innerHTML = renderStaffHeader(STAFF);
   paintCalendarHours(root);
   applyCalendarLayout(root, "day");
-  scrollCalendarToDate(root, calendarStartDate(root));
   setupSessionsCurrentTimeIndicators(root);
   placeCurrentTime(root);
   setupSessionsNavigators(root);
@@ -126,6 +168,9 @@ export function mountCalendarPage(root) {
   setupSessionsTeamMenus(root);
   setupSessionsSlotMenus(root);
   bindCalendarLayout(root);
+  bindMobileDateSheet(root);
+  bindAppointmentSheet(root);
+  bindCalendarClientPicker(root);
   bindMobileMenu(root);
   applySelectedStaff(root);
 }
@@ -159,7 +204,10 @@ function renderStaffHeader(staff) {
 function applySelectedStaff(root) {
   const staff = visibleStaff(root);
   const stage = root.querySelector(".calendar-stage");
-  if (stage) stage.style.setProperty("--sessions-staff-count", String(staff.length));
+  if (stage) {
+    stage.style.setProperty("--sessions-staff-count", String(staff.length));
+    stage.classList.toggle("is-single-staff", staff.length === 1);
+  }
   const header = root.querySelector("#staff-header");
   if (header) header.innerHTML = renderStaffHeader(staff);
   paintCalendarHours(root);
@@ -197,7 +245,10 @@ function applyCalendarLayout(root, view) {
   }
   if (!days) return;
   days.hidden = !isStaffDays;
-  if (!isStaffDays) return;
+  if (!isStaffDays) {
+    scrollCalendarToDate(root);
+    return;
+  }
   const selected = calendarStartDate(root);
   days.innerHTML = renderSessionsCalendarDayHeader({
     start: selected,
@@ -291,7 +342,187 @@ function bindCalendarLayout(root) {
         : "";
     paintCalendarHours(root);
     if (view) applyCalendarLayout(root, view);
-    scrollCalendarToDate(root, date);
+    else scrollCalendarToDate(root);
+  });
+}
+
+function paintDateSheet(sheet, selected) {
+  const parsed = parseNavigatorDate(selected);
+  const body = sheet.querySelector("[data-calendar-date-sheet-body]");
+  if (!body) return;
+  body.innerHTML = renderSessionsStackedCalendar({
+    startMonth: parsed.getMonth(),
+    startYear: parsed.getFullYear(),
+    rangeStart: selected,
+    selection: "single",
+  });
+}
+
+function clearCalendarSlotSelection(root) {
+  root.querySelectorAll(".sessions-hour-column__slot.is-selected").forEach((slot) => {
+    slot.classList.remove("is-selected");
+  });
+}
+
+function bindAppointmentSheet(root) {
+  const sheet = () => root.querySelector("[data-calendar-appointment-sheet]");
+  let closeToken = 0;
+
+  const finishClose = (modal, token) => {
+    if (token !== closeToken) return;
+    modal.classList.remove("is-closing");
+    modal.hidden = true;
+    clearCalendarSlotSelection(root);
+  };
+
+  const closeSheet = () => {
+    const modal = sheet();
+    if (!modal || modal.hidden) return;
+    const token = ++closeToken;
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!mobile || reduce || modal.classList.contains("is-closing")) {
+      finishClose(modal, token);
+      return;
+    }
+    const panel = modal.querySelector(".sessions-modal");
+    modal.classList.add("is-closing");
+    panel?.addEventListener(
+      "animationend",
+      (event) => {
+        if (event.target === panel) finishClose(modal, token);
+      },
+      { once: true },
+    );
+    window.setTimeout(() => finishClose(modal, token), 400);
+  };
+
+  const openSheet = (detail = {}) => {
+    const modal = sheet();
+    if (!modal) return;
+    closeToken += 1;
+    modal.classList.remove("is-closing");
+    const context = modal.querySelector("[data-calendar-appointment-context]");
+    if (context) {
+      const parts = [formatNavigatorDate(calendarStartDate(root))];
+      if (detail.time) parts.push(detail.time);
+      if (detail.staffName) parts.push(detail.staffName);
+      context.textContent = parts.join(" · ");
+    }
+    modal.hidden = false;
+    modal.querySelector(".sessions-modal__close")?.focus();
+  };
+
+  root.addEventListener("sessions:slot-booking", (event) => {
+    if (event.detail?.action !== "appointment") return;
+    if (window.matchMedia("(min-width: 769px)").matches) return;
+    openSheet(event.detail);
+  });
+
+  root.addEventListener("click", (event) => {
+    const modal = sheet();
+    if (!modal || modal.hidden) return;
+    if (
+      event.target.closest(
+        "[data-calendar-appointment-cancel], .calendar-appointment-sheet .calendar-date-sheet__scrim",
+      )
+    ) {
+      event.preventDefault();
+      closeSheet();
+      return;
+    }
+    if (event.target.closest("[data-calendar-appointment-save]")) {
+      event.preventDefault();
+      closeSheet();
+    }
+  });
+
+  root.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !sheet() || sheet().hidden) return;
+    event.stopPropagation();
+    closeSheet();
+  }, true);
+}
+
+function bindMobileDateSheet(root) {
+  const sheet = () => root.querySelector("[data-calendar-date-sheet]");
+  const dateButton = () => root.querySelector("[data-sessions-calendar-header-mobile-date]");
+  let closeToken = 0;
+
+  const finishClose = (modal, token) => {
+    if (token !== closeToken) return;
+    modal.classList.remove("is-closing");
+    modal.hidden = true;
+    dateButton()?.setAttribute("aria-expanded", "false");
+    dateButton()?.focus();
+  };
+
+  const closeSheet = () => {
+    const modal = sheet();
+    if (!modal || modal.hidden) return;
+    const token = ++closeToken;
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!mobile || reduce || modal.classList.contains("is-closing")) {
+      finishClose(modal, token);
+      return;
+    }
+    const panel = modal.querySelector(".sessions-modal");
+    modal.classList.add("is-closing");
+    panel?.addEventListener(
+      "animationend",
+      (event) => {
+        if (event.target === panel) finishClose(modal, token);
+      },
+      { once: true },
+    );
+    window.setTimeout(() => finishClose(modal, token), 400);
+  };
+
+  const openSheet = () => {
+    const modal = sheet();
+    if (!modal || !window.matchMedia("(max-width: 768px)").matches) return;
+    closeToken += 1;
+    modal.classList.remove("is-closing");
+    const selected = calendarStartDate(root);
+    paintDateSheet(modal, selected);
+    modal.hidden = false;
+    dateButton()?.setAttribute("aria-expanded", "true");
+    modal.querySelector(".sessions-modal__close")?.focus();
+  };
+
+  root.addEventListener("click", (event) => {
+    if (event.target.closest("[data-sessions-calendar-header-mobile-date]")) {
+      event.preventDefault();
+      openSheet();
+      return;
+    }
+
+    const modal = sheet();
+    if (!modal || modal.hidden) return;
+
+    if (event.target.closest(".calendar-date-sheet__scrim, .calendar-date-sheet .sessions-modal__close")) {
+      event.preventDefault();
+      closeSheet();
+      return;
+    }
+
+    const picked = event.target.closest(".calendar-date-sheet .sessions-date");
+    if (!picked || picked.disabled) return;
+    const dateKey = picked.dataset.calendarDate;
+    if (!dateKey) return;
+    setCalendarDate(root, dateKey);
+    closeSheet();
+  });
+
+  root.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !sheet() || sheet().hidden) return;
+    event.stopPropagation();
+    closeSheet();
+  }, true);
+
+  window.matchMedia("(max-width: 768px)").addEventListener("change", (event) => {
+    if (!event.matches) closeSheet();
   });
 }
 
@@ -305,12 +536,10 @@ function syncMobileDate(root, date) {
   mobileDate.setAttribute("aria-label", mobileText);
 }
 
-function scrollCalendarToDate(root, date) {
+function scrollCalendarToDate(root) {
   const stage = root.querySelector(".calendar-stage");
   if (stage?.classList.contains("is-view-3day") || stage?.classList.contains("is-view-week")) return;
-  const hour = date === toNavigatorDateValue(new Date())
-    ? new Date().getHours()
-    : OPEN_FROM_HOUR;
+  const hour = new Date().getHours();
   const label = root.querySelector(`[data-sessions-hour-label][data-hour="${hour}"]`);
   const row = label?.closest(".calendar-hour");
   const scroller = root.querySelector(".home-shell__main");

@@ -22,20 +22,20 @@
 
 @media (max-width: 1200px) {
   .clients-page .sessions-client-list {
-    grid-template-columns: max-content minmax(180px, 1.6fr) minmax(140px, 1fr) minmax(88px, 0.7fr);
+    grid-template-columns: minmax(0, 1.6fr) minmax(140px, 1fr) minmax(88px, 0.7fr);
   }
 
-  .clients-page .sessions-client-list__row > :nth-child(5) {
+  .clients-page .sessions-client-list__row > :nth-child(4) {
     display: none;
   }
 }
 
 @media (max-width: 1000px) {
   .clients-page .sessions-client-list {
-    grid-template-columns: max-content minmax(180px, 1.6fr) minmax(140px, 1fr);
+    grid-template-columns: minmax(0, 1.6fr) minmax(140px, 1fr);
   }
 
-  .clients-page .sessions-client-list__row > :nth-child(4) {
+  .clients-page .sessions-client-list__row > :nth-child(3) {
     display: none;
   }
 }
@@ -47,10 +47,14 @@
   }
 
   .clients-page .sessions-client-list {
-    grid-template-columns: max-content minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .clients-page .sessions-client-list__row > :nth-child(n + 3) {
+  .clients-page .sessions-client-list__row {
+    padding-inline: 0;
+  }
+
+  .clients-page .sessions-client-list__row > :nth-child(n + 2) {
     display: none;
   }
 }
@@ -109,5 +113,68 @@
 .clients-delete .sessions-button--primary:active:not(:disabled):not(.is-loading) {
   border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
   background: var(--joker-red-800);
+}
+
+@media (max-width: 768px) {
+  .clients-delete {
+    display: block;
+    padding: 0;
+  }
+
+  .clients-delete__scrim {
+    background: color-mix(in srgb, var(--black-900) 62%, transparent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    animation: clients-delete-scrim-in var(--motion-slow) var(--ease-out);
+  }
+
+  .clients-delete .sessions-modal {
+    position: absolute;
+    top: auto;
+    right: var(--spacing-8);
+    bottom: 0;
+    left: var(--spacing-8);
+    width: auto;
+    border-bottom: 0;
+    border-radius: var(--spacing-12) var(--spacing-12) 0 0;
+    padding: var(--spacing-24) var(--spacing-8) var(--spacing-48);
+    animation: clients-delete-in var(--motion-slow) var(--ease-emphasized);
+  }
+
+  .clients-delete.is-closing .sessions-modal {
+    animation: clients-delete-out var(--motion-slow) var(--ease-emphasized) forwards;
+  }
+
+  .clients-delete.is-closing .clients-delete__scrim {
+    animation: clients-delete-scrim-out var(--motion-slow) var(--ease-out) forwards;
+    pointer-events: none;
+  }
+}
+
+@keyframes clients-delete-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes clients-delete-out {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@keyframes clients-delete-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes clients-delete-scrim-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clients-delete .sessions-modal,
+  .clients-delete__scrim {
+    animation: none;
+  }
 }
 

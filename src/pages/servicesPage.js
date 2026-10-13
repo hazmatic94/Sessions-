@@ -1,4 +1,4 @@
-import { renderPrimaryButton, renderSecondaryButton } from "/ds/src/components/button/button.js";
+import { renderPrimaryButton } from "/ds/src/components/button/button.js";
 import { renderSessionsChip } from "/ds/src/components/chip/chip.js";
 import {
   renderMobileMenu,
@@ -13,13 +13,12 @@ import { renderSessionsServiceList, setupSessionsServiceLists } from "/ds/src/co
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+import { listStoredServices, saveServices } from "/src/data/services.js";
 
 const navOptions = {
   href: "/",
   ariaLabel: "Sessions home",
 };
-
-const SERVICES_KEY = "sessions.services";
 
 const SERVICE_SORTS = [
   { value: "name-az", label: "Name (A-Z)" },
@@ -32,24 +31,6 @@ const SERVICE_SORTS = [
 
 let serviceQuery = "";
 let serviceSort = "name-az";
-
-function storedServices() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(SERVICES_KEY) || "[]");
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => item && String(item.name || "").trim());
-  } catch {
-    return [];
-  }
-}
-
-function writeServices(services) {
-  try {
-    localStorage.setItem(SERVICES_KEY, JSON.stringify(services));
-  } catch {
-    // ponytail: storage can be blocked; the list still lives for this page view
-  }
-}
 
 function serviceKey(service) {
   return [service.name, service.description, service.duration, service.priceType, service.price].join("\0");
@@ -83,12 +64,12 @@ function visibleServices(services) {
 }
 
 function refreshServices(root) {
-  const services = storedServices();
+  const services = listStoredServices();
   const rows = visibleServices(services);
   const page = root.querySelector(".services-page");
   if (!page) return;
   const current = page.querySelector(".sessions-service-list, .services-empty");
-  const next = rows.length ? renderSessionsServiceList({ rows }) : renderServicesEmpty();
+  const next = rows.length ? renderSessionsServiceList({ rows }) : renderServicesEmpty(services.length > 0);
   if (current) current.outerHTML = next;
   else page.querySelector(".services-results")?.insertAdjacentHTML("beforebegin", next);
   const chip = page.querySelector(".sessions-chip--count");
@@ -112,7 +93,7 @@ function renderServicesResults(shown, total) {
 }
 
 export function renderServicesPage() {
-  const services = storedServices();
+  const services = listStoredServices();
   const rows = visibleServices(services);
   return `
     <div class="home-shell">
@@ -127,7 +108,7 @@ export function renderServicesPage() {
               name: "service-search",
               sortLabel: "Name (A-Z)",
               sortOptions: SERVICE_SORTS,
-            })}${rows.length ? renderSessionsServiceList({ rows }) : renderServicesEmpty()}${renderServicesResults(rows.length, services.length)}</div>`,
+            })}${rows.length ? renderSessionsServiceList({ rows }) : renderServicesEmpty(services.length > 0)}${renderServicesResults(rows.length, services.length)}</div>`,
           })}
         </main>
       </div>
@@ -145,12 +126,12 @@ export function renderServicesPage() {
   `;
 }
 
-function renderServicesEmpty() {
+function renderServicesEmpty(hasServices) {
+  const body = hasServices ? "Try adjusting your search criteria" : "You don't have any services added yet.";
   return `<section class="services-empty">
     <img class="services-empty__icon" src="/assets/IconSearch.svg" alt="" />
     <h3 class="sessions-page-header__title">No services found</h3>
-    <p class="sessions-page-header__body">Try adjusting your search criteria</p>
-    ${renderSecondaryButton({ label: "Create new service" }).replace("<button ", '<button data-sessions-add-service-open ')}
+    <p class="sessions-page-header__body">${body}</p>
   </section>`;
 }
 
@@ -195,7 +176,7 @@ function bindServiceCreate(root) {
       priceType: String(data.get("priceType") || "fixed"),
       price: String(data.get("price") || "0.00"),
     };
-    const services = storedServices();
+    const services = listStoredServices();
     if (editingRow?.isConnected) {
       const current = readServiceRow(editingRow);
       const index = services.findIndex((item) => serviceKey(item) === serviceKey(current));
@@ -205,7 +186,7 @@ function bindServiceCreate(root) {
     } else {
       services.push(service);
     }
-    writeServices(services);
+    saveServices(services);
     refreshServices(root);
     form.reset();
     root.querySelectorAll("[data-sessions-add-service] .sessions-add-service__counted").forEach((counted) => {
@@ -379,10 +360,10 @@ function syncServiceCounts(root) {
 function removeServiceRow(root, row) {
   if (!row) return;
   const current = readServiceRow(row);
-  const services = storedServices();
+  const services = listStoredServices();
   const index = services.findIndex((item) => serviceKey(item) === serviceKey(current));
   if (index >= 0) services.splice(index, 1);
-  writeServices(services);
+  saveServices(services);
   refreshServices(root);
 }
 

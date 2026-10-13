@@ -6,8 +6,8 @@ const SHIFT_END = 19 * 60;
 
 export const SHIFT_TEAM = [
   { name: "Harry Maher", avatarSrc: "/assets/user.png" },
-  { name: "Kale Emery", avatarInitial: "K" },
-  { name: "Connor Braddock", avatarInitial: "C" },
+  { name: "Kale Emery", avatarSrc: "/assets/demo/kale.png" },
+  { name: "Connor Braddock", avatarSrc: "/assets/demo/connor.png" },
 ];
 
 const SEED_KINDS = {

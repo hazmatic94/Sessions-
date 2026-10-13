@@ -36,14 +36,14 @@ const TEAM = [
     email: "kale@sessions.com",
     phone: "+61 461 455 500",
     role: "No Access",
-    avatarInitial: "K",
+    avatarSrc: "/assets/demo/kale.png",
   },
   {
     name: "Connor Braddock",
     email: "connor@sessions.com",
     phone: "+61 461 455 500",
     role: "No Access",
-    avatarInitial: "C",
+    avatarSrc: "/assets/demo/connor.png",
   },
 ];
 

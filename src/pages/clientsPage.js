@@ -17,62 +17,12 @@ import {
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+import { CLIENTS } from "/src/data/clients.js";
 
 const navOptions = {
   href: "/",
   ariaLabel: "Sessions home",
 };
-
-const CLIENTS = [
-  {
-    name: "Harry Maher",
-    email: "harrymaherdesign@gmail.com",
-    phone: "+61 461455500",
-    sales: "A$ 5040",
-    createdOn: "Jun 18, 2024",
-    avatarInitial: "H",
-  },
-  {
-    name: "Larry June",
-    email: "larry@sessions.com",
-    phone: "+61 400112233",
-    sales: "A$ 1280",
-    createdOn: "Aug 2, 2024",
-    avatarSrc: "/assets/user.png",
-  },
-  {
-    name: "Marcus Bell",
-    email: "marcus@sessions.com",
-    phone: "+61 411223344",
-    sales: "A$ 760",
-    createdOn: "Mar 9, 2025",
-    avatarInitial: "M",
-  },
-  {
-    name: "Sofia Reyes",
-    email: "sofia@sessions.com",
-    phone: "+61 422334455",
-    sales: "A$ 2140",
-    createdOn: "Jan 14, 2025",
-    avatarInitial: "S",
-  },
-  {
-    name: "Wendy Smith",
-    email: "wendy@sessions.com",
-    phone: "+61 433445566",
-    sales: "A$ 540",
-    createdOn: "Sep 28, 2024",
-    avatarInitial: "W",
-  },
-  {
-    name: "Ava Nguyen",
-    email: "ava@sessions.com",
-    phone: "+61 444556677",
-    sales: "A$ 980",
-    createdOn: "Nov 3, 2024",
-    avatarInitial: "A",
-  },
-];
 
 function renderClientsHeader() {
   return renderPageTitle({
@@ -160,9 +110,29 @@ function bindDeleteClient(root) {
   const dialog = () => root.querySelector("[data-sessions-delete-client]");
 
   const closeDelete = () => {
-    pendingName = "";
     const modal = dialog();
-    if (modal) modal.hidden = true;
+    if (!modal) return;
+    const finish = () => {
+      modal.classList.remove("is-closing");
+      modal.hidden = true;
+      pendingName = "";
+    };
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (modal.hidden || !mobile || reduce || modal.classList.contains("is-closing")) {
+      finish();
+      return;
+    }
+    const panel = modal.querySelector(".sessions-modal");
+    modal.classList.add("is-closing");
+    panel?.addEventListener(
+      "animationend",
+      (event) => {
+        if (event.target === panel) finish();
+      },
+      { once: true },
+    );
+    window.setTimeout(finish, 400);
   };
 
   const confirmDelete = () => {
