@@ -23,6 +23,16 @@
   -webkit-overflow-scrolling: touch;
 }
 
+[data-calendar-booking-add-service-panel][data-sessions-add-service] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+[data-calendar-booking-add-service-panel] .sessions-notifications.sessions-surface-step {
+  gap: 0;
+}
+
 [data-calendar-booking-service-panel],
 [data-calendar-booking-add-service-panel] {
   box-sizing: border-box;

@@ -49,7 +49,7 @@ export function appendService(service) {
 export function readServiceFromForm(form) {
   if (!form) return null;
   const data = new FormData(form);
-  const duration = form.querySelector("[data-calendar-booking-service-duration], #add-service-duration");
+  const duration = form.querySelector('select[name="duration"]');
   return {
     name: String(data.get("serviceName") || "").trim(),
     description: String(data.get("description") || ""),
