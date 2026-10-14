@@ -1,6 +1,7 @@
 import { renderGhostButton, renderSessionsButton } from "/ds/src/components/button/button.js";
+import { renderSessionsInput } from "/ds/src/components/input/input.js";
 import { renderSessionsAddClientSurfaceContent } from "/ds/src/components/patterns/addClient.js";
-import { renderSessionsAddServiceSurfaceContent } from "/ds/src/components/patterns/addService.js";
+import { renderSessionsPageHeader } from "/ds/src/components/patterns/pageHeader.js";
 import { renderSessionsMenuDivider } from "/ds/src/components/menu/index.js";
 import { renderSessionsClientCard } from "/ds/src/components/cards/clientCard.js";
 import { renderSessionsClientRow } from "/ds/src/components/rows/clientRow.js";
@@ -94,15 +95,71 @@ function renderServicePanel() {
   return `<div class="calendar-client-picker__panel sessions-surface-step-panel" data-calendar-booking-service-panel hidden><div class="sessions-notifications sessions-surface-step calendar-booking-step"><div class="sessions-client-edit__nav">${back}</div><div class="sessions-notifications__heading"><h2 class="calendar-client-picker__title">Select a service</h2></div><div class="calendar-service-picker__body" data-calendar-booking-service-list-host>${renderServiceList()}</div><div class="calendar-service-picker__add">${add}</div></div></div>`;
 }
 
+function renderBookingServiceSelect({ label, name, id, value, options }) {
+  const items = options
+    .map(([optionValue, optionLabel]) => {
+      const selected = optionValue === value ? " selected" : "";
+      return `<option value="${optionValue}"${selected}>${optionLabel}</option>`;
+    })
+    .join("");
+  return `<label class="sessions-input sessions-add-service__select"><span class="sessions-input__label">${label}</span><span class="sessions-input__control"><select class="sessions-input__field" name="${name}" id="${id}" data-calendar-booking-service-duration>${items}</select></span></label>`;
+}
+
 function renderAddServicePanel() {
-  return `<div class="calendar-client-picker__panel sessions-surface-step-panel" data-calendar-booking-add-service-panel data-sessions-add-service hidden>${renderSessionsAddServiceSurfaceContent({
-    idPrefix: "calendar-booking-service",
-    formId: "calendar-booking-add-service-form",
-    formAttribute: "data-calendar-booking-add-service-form",
-    closeAttribute: "data-calendar-booking-add-service-back",
-    showNav: true,
-    saveType: "submit",
-  })}</div>`;
+  const back = renderGhostButton({
+    label: "Back",
+    icon: "chevron-left",
+    className: "sessions-client-edit__back",
+  }).replace("<button ", '<button type="button" data-calendar-booking-add-service-back ');
+  const name = renderSessionsInput({
+    label: "Service name",
+    placeholder: "Add a service name",
+    name: "serviceName",
+    id: "calendar-booking-service-name",
+    fullWidth: true,
+  });
+  const priceType = renderBookingServiceSelect({
+    label: "Price type",
+    name: "priceType",
+    id: "calendar-booking-service-price-type",
+    value: "fixed",
+    options: [
+      ["fixed", "Fixed"],
+      ["free", "Free"],
+      ["from", "From"],
+    ],
+  });
+  const price = `<label class="sessions-input sessions-add-service__price"><span class="sessions-input__label">Price</span><span class="sessions-input__control"><span class="sessions-add-service__prefix">A$</span><input class="sessions-input__field" name="price" id="calendar-booking-service-price" inputmode="decimal" value="60.00" data-calendar-booking-service-price /><span class="sessions-add-service__stepper"><button type="button" data-calendar-booking-service-price-step="1" aria-label="Increase price"><img src="/assets/IconChevronUp.svg" alt="" /></button><button type="button" data-calendar-booking-service-price-step="-1" aria-label="Decrease price"><img src="/assets/IconChevronDown.svg" alt="" /></button></span></span></label>`;
+  const duration = renderBookingServiceSelect({
+    label: "Duration",
+    name: "duration",
+    id: "calendar-booking-service-duration",
+    value: "45",
+    options: [
+      ["15", "15 min"],
+      ["30", "30 min"],
+      ["45", "45 min"],
+      ["60", "1 hr"],
+      ["90", "1 hr 30 min"],
+      ["120", "2 hr"],
+    ],
+  });
+  const cancel = renderSessionsButton({ variant: "secondary", label: "Cancel" }).replace(
+    "<button ",
+    '<button type="button" data-calendar-booking-add-service-back ',
+  );
+  const save = renderSessionsButton({
+    variant: "primary",
+    label: "Save",
+    type: "submit",
+    disabled: true,
+  }).replace("<button ", '<button form="calendar-booking-add-service-form" data-calendar-booking-save-service ');
+  const form = `<form class="sessions-add-client__form" id="calendar-booking-add-service-form" data-calendar-booking-add-service-form>${name}${priceType}${price}${duration}<div class="sessions-add-client__actions sessions-add-client__actions--inline">${cancel}${save}</div></form>`;
+
+  return `<div class="calendar-client-picker__panel sessions-surface-step-panel" data-calendar-booking-add-service-panel hidden><div class="sessions-notifications sessions-surface-step calendar-booking-step" data-calendar-booking-add-service-body><div class="sessions-client-edit__nav">${back}</div><div class="sessions-notifications__heading">${renderSessionsPageHeader({
+    title: "Service details",
+    body: "Add your new service details here",
+  })}</div>${form}</div></div>`;
 }
 
 function renderAddClientPanel() {
@@ -290,18 +347,12 @@ function resetAddClientForm(root) {
 function resetAddServiceForm(root) {
   const form = root.querySelector("[data-calendar-booking-add-service-form]");
   form?.reset();
-  form?.querySelectorAll(".sessions-add-service__counted").forEach((counted) => {
-    const field = counted.querySelector(".sessions-input__field");
-    const count = counted.querySelector("[data-sessions-add-service-count]");
-    if (field && count && field.maxLength >= 0) count.textContent = `0/${field.maxLength}`;
-  });
   syncBookingAddServiceSave(root);
 }
 
 function syncBookingAddServiceSave(root) {
-  const form = root.querySelector("[data-calendar-booking-add-service-form]");
-  const button = form?.querySelector("[type='submit']");
-  const name = form?.querySelector("[name='serviceName']");
+  const button = root.querySelector("[data-calendar-booking-save-service]");
+  const name = root.querySelector("#calendar-booking-service-name");
   if (button) button.disabled = !name?.value.trim();
 }
 
@@ -396,13 +447,7 @@ export function bindCalendarClientPicker(root) {
       paintPickerList(root, event.target.value);
       return;
     }
-    const serviceField = event.target.closest("[data-calendar-booking-add-service-panel] .sessions-input__field");
-    if (!serviceField) return;
-    if (serviceField.maxLength >= 0) {
-      const count = serviceField.closest(".sessions-add-service__counted")?.querySelector("[data-sessions-add-service-count]");
-      if (count) count.textContent = `${serviceField.value.length}/${serviceField.maxLength}`;
-    }
-    if (serviceField.name === "serviceName") syncBookingAddServiceSave(root);
+    if (event.target.matches("#calendar-booking-service-name")) syncBookingAddServiceSave(root);
   });
 
   root.addEventListener("submit", (event) => {
@@ -492,6 +537,11 @@ export function bindCalendarClientPicker(root) {
       return;
     }
 
+    if (event.target.closest("[data-selector-action]")) {
+      event.preventDefault();
+      return;
+    }
+
     const servicePick = event.target.closest("[data-calendar-service-pick]");
     if (servicePick) {
       event.preventDefault();
@@ -501,11 +551,11 @@ export function bindCalendarClientPicker(root) {
       return;
     }
 
-    const priceStep = event.target.closest("[data-calendar-booking-add-service-panel] [data-sessions-add-service-price-step]");
+    const priceStep = event.target.closest("[data-calendar-booking-service-price-step]");
     if (priceStep) {
-      const field = priceStep.closest("label")?.querySelector("[data-sessions-add-service-price]");
+      const field = root.querySelector("[data-calendar-booking-service-price]");
       if (!field) return;
-      const step = Number(priceStep.dataset.sessionsAddServicePriceStep);
+      const step = Number(priceStep.dataset.calendarBookingServicePriceStep);
       const next = Math.max(0, (Number(field.value) || 0) + step);
       field.value = next.toFixed(2);
     }
