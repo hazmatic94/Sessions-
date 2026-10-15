@@ -4,7 +4,11 @@ import {
   renderTopNav,
   setupSessionsProfileMenu,
 } from "/ds/src/components/navigation/index.js";
-import { applySessionsCalendarSelection, renderSessionsStackedCalendar } from "/ds/src/components/calendar/calendar.js";
+import {
+  applySessionsCalendarSelection,
+  renderSessionsCalendar,
+  renderSessionsStackedCalendar,
+} from "/ds/src/components/calendar/calendar.js";
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { setupSessionsCalendars } from "/ds/src/components/calendar/interactions.js";
 import {
@@ -104,7 +108,6 @@ export function renderCalendarPage() {
         </div>
       </div>
       ${renderCalendarDateSheet()}
-      ${renderCalendarAppointmentSheet()}
       ${renderCalendarClientPicker()}
     </div>
   `;
@@ -121,26 +124,6 @@ function renderCalendarDateSheet() {
   );
 
   return `<div class="calendar-date-sheet" data-calendar-date-sheet hidden><button class="calendar-date-sheet__scrim" type="button" aria-label="Close"></button>${modal}</div>`;
-}
-
-function renderCalendarAppointmentSheet() {
-  const modal = renderSessionsModal({
-    title: "Add appointment",
-    bodyMarkup: `<p class="sessions-modal__body" data-calendar-appointment-context></p>`,
-    secondaryLabel: "Cancel",
-    primaryLabel: "Save",
-  })
-    .replace(
-      'class="sessions-button sessions-button--secondary"',
-      'class="sessions-button sessions-button--secondary" data-calendar-appointment-cancel',
-    )
-    .replace(
-      'class="sessions-button sessions-button--primary"',
-      'class="sessions-button sessions-button--primary" data-calendar-appointment-save',
-    )
-    .replace('class="sessions-modal__close"', 'class="sessions-modal__close" data-calendar-appointment-cancel');
-
-  return `<div class="calendar-date-sheet calendar-appointment-sheet" data-calendar-appointment-sheet hidden><button class="calendar-date-sheet__scrim" type="button" data-calendar-appointment-cancel aria-label="Close"></button>${modal}</div>`;
 }
 
 export function mountCalendarPage(root) {
@@ -169,7 +152,6 @@ export function mountCalendarPage(root) {
   setupSessionsSlotMenus(root);
   bindCalendarLayout(root);
   bindMobileDateSheet(root);
-  bindAppointmentSheet(root);
   bindCalendarClientPicker(root);
   bindMobileMenu(root);
   applySelectedStaff(root);
@@ -346,10 +328,35 @@ function bindCalendarLayout(root) {
   });
 }
 
+function readBookingWhen(root) {
+  try {
+    const booking = JSON.parse(root.dataset.calendarPendingBooking || "{}");
+    return { date: booking.date || "", time: booking.time || "" };
+  } catch {
+    return { date: "", time: "" };
+  }
+}
+
+function paintBookingDate(sheet, selected, month, year) {
+  const parsed = parseNavigatorDate(selected);
+  const body = sheet.querySelector("[data-calendar-date-sheet-body]");
+  if (!body) return;
+  body.innerHTML = `<h2 class="sessions-modal__title calendar-date-sheet__title">Edit date</h2>${renderSessionsCalendar({
+    month: month ?? parsed.getMonth(),
+    year: year ?? parsed.getFullYear(),
+    rangeStart: selected,
+    selection: "single",
+  })}`;
+}
+
 function paintDateSheet(sheet, selected) {
   const parsed = parseNavigatorDate(selected);
   const body = sheet.querySelector("[data-calendar-date-sheet-body]");
   if (!body) return;
+  if (sheet.classList.contains("is-booking")) {
+    paintBookingDate(sheet, selected);
+    return;
+  }
   body.innerHTML = renderSessionsStackedCalendar({
     startMonth: parsed.getMonth(),
     startYear: parsed.getFullYear(),
@@ -358,90 +365,21 @@ function paintDateSheet(sheet, selected) {
   });
 }
 
-function clearCalendarSlotSelection(root) {
-  root.querySelectorAll(".sessions-hour-column__slot.is-selected").forEach((slot) => {
-    slot.classList.remove("is-selected");
-  });
+function shiftBookingMonth(calendar, delta) {
+  let months = [];
+  try {
+    months = JSON.parse(calendar?.dataset.calendarMonths || "[]");
+  } catch {
+    months = [];
+  }
+  const current = months[0];
+  if (!current) return null;
+  const next = new Date(current.year, current.month + delta, 1);
+  return { month: next.getMonth(), year: next.getFullYear() };
 }
 
-function bindAppointmentSheet(root) {
-  const sheet = () => root.querySelector("[data-calendar-appointment-sheet]");
-  let closeToken = 0;
-
-  const finishClose = (modal, token) => {
-    if (token !== closeToken) return;
-    modal.classList.remove("is-closing");
-    modal.hidden = true;
-    clearCalendarSlotSelection(root);
-  };
-
-  const closeSheet = () => {
-    const modal = sheet();
-    if (!modal || modal.hidden) return;
-    const token = ++closeToken;
-    const mobile = window.matchMedia("(max-width: 768px)").matches;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!mobile || reduce || modal.classList.contains("is-closing")) {
-      finishClose(modal, token);
-      return;
-    }
-    const panel = modal.querySelector(".sessions-modal");
-    modal.classList.add("is-closing");
-    panel?.addEventListener(
-      "animationend",
-      (event) => {
-        if (event.target === panel) finishClose(modal, token);
-      },
-      { once: true },
-    );
-    window.setTimeout(() => finishClose(modal, token), 400);
-  };
-
-  const openSheet = (detail = {}) => {
-    const modal = sheet();
-    if (!modal) return;
-    closeToken += 1;
-    modal.classList.remove("is-closing");
-    const context = modal.querySelector("[data-calendar-appointment-context]");
-    if (context) {
-      const parts = [formatNavigatorDate(calendarStartDate(root))];
-      if (detail.time) parts.push(detail.time);
-      if (detail.staffName) parts.push(detail.staffName);
-      context.textContent = parts.join(" · ");
-    }
-    modal.hidden = false;
-    modal.querySelector(".sessions-modal__close")?.focus();
-  };
-
-  root.addEventListener("sessions:slot-booking", (event) => {
-    if (event.detail?.action !== "appointment") return;
-    if (window.matchMedia("(min-width: 769px)").matches) return;
-    openSheet(event.detail);
-  });
-
-  root.addEventListener("click", (event) => {
-    const modal = sheet();
-    if (!modal || modal.hidden) return;
-    if (
-      event.target.closest(
-        "[data-calendar-appointment-cancel], .calendar-appointment-sheet .calendar-date-sheet__scrim",
-      )
-    ) {
-      event.preventDefault();
-      closeSheet();
-      return;
-    }
-    if (event.target.closest("[data-calendar-appointment-save]")) {
-      event.preventDefault();
-      closeSheet();
-    }
-  });
-
-  root.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !sheet() || sheet().hidden) return;
-    event.stopPropagation();
-    closeSheet();
-  }, true);
+function publishBookingWhen(root, detail) {
+  root.dispatchEvent(new CustomEvent("sessions:booking-when", { detail }));
 }
 
 function bindMobileDateSheet(root) {
@@ -451,10 +389,14 @@ function bindMobileDateSheet(root) {
 
   const finishClose = (modal, token) => {
     if (token !== closeToken) return;
-    modal.classList.remove("is-closing");
+    const booking = modal.classList.contains("is-booking");
+    modal.classList.remove("is-closing", "is-booking");
     modal.hidden = true;
     dateButton()?.setAttribute("aria-expanded", "false");
-    dateButton()?.focus();
+    const bookingDate = root.querySelector("[data-calendar-booking-date]");
+    bookingDate?.setAttribute("aria-expanded", "false");
+    if (booking) bookingDate?.focus();
+    else dateButton()?.focus();
   };
 
   const closeSheet = () => {
@@ -479,19 +421,30 @@ function bindMobileDateSheet(root) {
     window.setTimeout(() => finishClose(modal, token), 400);
   };
 
-  const openSheet = () => {
+  const openSheet = ({ booking = false } = {}) => {
     const modal = sheet();
-    if (!modal || !window.matchMedia("(max-width: 768px)").matches) return;
+    if (!modal) return;
+    if (!booking && !window.matchMedia("(max-width: 768px)").matches) return;
     closeToken += 1;
     modal.classList.remove("is-closing");
-    const selected = calendarStartDate(root);
+    modal.classList.toggle("is-booking", booking);
+    const bookingWhen = booking ? readBookingWhen(root) : null;
+    const selected = bookingWhen?.date || calendarStartDate(root);
     paintDateSheet(modal, selected);
+    modal.querySelector(".sessions-modal")?.setAttribute("aria-label", booking ? "Edit date" : "Choose a date");
     modal.hidden = false;
-    dateButton()?.setAttribute("aria-expanded", "true");
+    if (booking) root.querySelector("[data-calendar-booking-date]")?.setAttribute("aria-expanded", "true");
+    else dateButton()?.setAttribute("aria-expanded", "true");
     modal.querySelector(".sessions-modal__close")?.focus();
   };
 
   root.addEventListener("click", (event) => {
+    if (event.target.closest("[data-calendar-booking-date]")) {
+      event.preventDefault();
+      openSheet({ booking: true });
+      return;
+    }
+
     if (event.target.closest("[data-sessions-calendar-header-mobile-date]")) {
       event.preventDefault();
       openSheet();
@@ -507,10 +460,26 @@ function bindMobileDateSheet(root) {
       return;
     }
 
+    const nav = event.target.closest(".calendar-date-sheet.is-booking .sessions-calendar__nav");
+    if (nav) {
+      event.preventDefault();
+      const delta = nav.classList.contains("sessions-calendar__nav--next") ? 1 : -1;
+      const next = shiftBookingMonth(nav.closest("[data-sessions-calendar]"), delta);
+      if (!next) return;
+      paintBookingDate(modal, readBookingWhen(root).date || calendarStartDate(root), next.month, next.year);
+      return;
+    }
+
     const picked = event.target.closest(".calendar-date-sheet .sessions-date");
     if (!picked || picked.disabled) return;
     const dateKey = picked.dataset.calendarDate;
     if (!dateKey) return;
+    if (modal.classList.contains("is-booking")) {
+      event.preventDefault();
+      publishBookingWhen(root, { date: dateKey });
+      closeSheet();
+      return;
+    }
     setCalendarDate(root, dateKey);
     closeSheet();
   });
