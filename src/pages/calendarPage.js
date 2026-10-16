@@ -4,11 +4,7 @@ import {
   renderTopNav,
   setupSessionsProfileMenu,
 } from "/ds/src/components/navigation/index.js";
-import {
-  applySessionsCalendarSelection,
-  renderSessionsCalendar,
-  renderSessionsStackedCalendar,
-} from "/ds/src/components/calendar/calendar.js";
+import { applySessionsCalendarSelection, renderSessionsCalendar } from "/ds/src/components/calendar/calendar.js";
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { setupSessionsCalendars } from "/ds/src/components/calendar/interactions.js";
 import {
@@ -39,7 +35,7 @@ import {
 } from "/ds/src/components/patterns/staffHeader.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
 import { bindCalendarClientPicker, renderCalendarClientPicker } from "/src/pages/calendarClientPicker.js";
-import { outsideQuarters, SHIFT_TEAM, shiftLabel, shiftOn } from "/src/pages/shiftStore.js";
+import { memberColor, outsideQuarters, SHIFT_TEAM, shiftLabel, shiftOn, tintMemberAvatar } from "/src/pages/shiftStore.js";
 
 const STAFF = SHIFT_TEAM;
 
@@ -66,25 +62,30 @@ function paintCalendarHours(root) {
   const date = calendarStartDate(root);
   const hours = root.querySelector("#hour-column");
   if (!hours) return;
+  const scroller = root.querySelector(".home-shell__main");
+  const scrollTop = scroller?.scrollTop ?? 0;
   hours.innerHTML = `${Array.from({ length: HOUR_COUNT }, (_, hour) => {
-    const columns = Array.from({ length: 7 }, (_, index) => {
-      const person = staff[index];
+    const columns = staff.map((person) => {
       const column = renderSessionsHourColumn({
         hour,
-        outsideMinutes: person ? outsideMinutesForHour(person.name, date, hour) : CLOSED_QUARTERS,
+        outsideMinutes: outsideMinutesForHour(person.name, date, hour),
       });
-      return index < staff.length
-        ? column.replace(
-            "data-sessions-hour-column",
-            `data-sessions-hour-column data-calendar-staff="${person.name}"`,
-          )
-        : column.replace("sessions-hour-column", "sessions-hour-column is-day-extra");
+      return column
+        .replace("<div ", `<div style="--member-color: ${memberColor(person.name)}" `)
+        .replace(
+          "data-sessions-hour-column",
+          `data-sessions-hour-column data-calendar-staff="${person.name}"`,
+        );
     }).join("");
     return `<div class="calendar-hour">${renderSessionsHourLabel({
       hour,
       minute: 0,
     })}${columns}</div>`;
   }).join("")}${renderSessionsCurrentTimeIndicator()}`;
+  if (scroller) {
+    scroller.scrollTop = scrollTop;
+    scroller.scrollLeft = 0;
+  }
   setupSessionsCurrentTimeIndicators(root);
   placeCurrentTime(root);
 }
@@ -126,6 +127,12 @@ function renderCalendarDateSheet() {
   return `<div class="calendar-date-sheet" data-calendar-date-sheet hidden><button class="calendar-date-sheet__scrim" type="button" aria-label="Close"></button>${modal}</div>`;
 }
 
+function syncCalendarHeaderLayout(root) {
+  const mobile = window.matchMedia("(max-width: 768px)").matches;
+  root.querySelector(".sessions-calendar-header-row__layout--desktop")?.toggleAttribute("hidden", mobile);
+  root.querySelector(".sessions-calendar-header-row__layout--mobile")?.toggleAttribute("hidden", !mobile);
+}
+
 export function mountCalendarPage(root) {
   root.innerHTML = renderCalendarPage();
   root.querySelector("#top-nav").innerHTML = renderTopNav(navOptions);
@@ -137,6 +144,11 @@ export function mountCalendarPage(root) {
   root.querySelector("#calendar-header").innerHTML = renderSessionsCalendarHeaderRow({
     team: STAFF,
     youName: "Harry Maher",
+  });
+  syncCalendarHeaderLayout(root);
+  window.matchMedia("(max-width: 768px)").addEventListener("change", () => {
+    syncCalendarHeaderLayout(root);
+    applySelectedStaff(root);
   });
   root.querySelector("#staff-header").innerHTML = renderStaffHeader(STAFF);
   paintCalendarHours(root);
@@ -155,20 +167,43 @@ export function mountCalendarPage(root) {
   bindCalendarClientPicker(root);
   bindMobileMenu(root);
   applySelectedStaff(root);
+  paintTeamMenuAvatars(root);
+}
+
+function paintTeamMenuAvatars(root) {
+  root.querySelectorAll("[data-sessions-team-menu]").forEach((menu) => {
+    menu.querySelectorAll("[data-sessions-team-member]").forEach((input) => {
+      tintMemberAvatar(
+        input.closest(".sessions-team-menu__member")?.querySelector(".sessions-avatar"),
+        input.dataset.sessionsTeamMember,
+      );
+    });
+    tintMemberAvatar(
+      menu.querySelector("[data-sessions-team-filter='you'] .sessions-avatar"),
+      menu.dataset.sessionsTeamYou,
+    );
+  });
+}
+
+function visibleTeamMenu(root) {
+  const menus = [...root.querySelectorAll("[data-sessions-team-menu]")];
+  return menus.find((menu) => menu.getClientRects().length) ?? menus[0];
 }
 
 function visibleStaff(root) {
-  const menu = root.querySelector("[data-sessions-team-menu]");
-  if (!menu) return STAFF;
+  const menu = visibleTeamMenu(root);
+  const limit = (list) =>
+    window.matchMedia("(max-width: 768px)").matches ? list.slice(0, 3) : list;
+  if (!menu) return limit(STAFF);
   const names = new Set(
     [...menu.querySelectorAll("[data-sessions-team-member]")]
       .filter((input) => input.checked)
       .map((input) => input.dataset.sessionsTeamMember),
   );
   const staff = STAFF.filter((person) => names.has(person.name));
-  if (staff.length) return staff;
+  if (staff.length) return limit(staff);
   const you = STAFF.find((person) => person.name === menu.dataset.sessionsTeamYou);
-  return you ? [you] : STAFF.slice(0, 1);
+  return limit(you ? [you] : STAFF.slice(0, 1));
 }
 
 function renderStaffHeader(staff) {
@@ -178,7 +213,7 @@ function renderStaffHeader(staff) {
         name: person.name,
         avatarSrc: person.avatarSrc,
         avatarInitial: person.avatarInitial,
-      }),
+      }).replace("<div ", `<div style="--member-color: ${memberColor(person.name)}" `),
     )
     .join("")}</div>`;
 }
@@ -186,10 +221,7 @@ function renderStaffHeader(staff) {
 function applySelectedStaff(root) {
   const staff = visibleStaff(root);
   const stage = root.querySelector(".calendar-stage");
-  if (stage) {
-    stage.style.setProperty("--sessions-staff-count", String(staff.length));
-    stage.classList.toggle("is-single-staff", staff.length === 1);
-  }
+  if (stage) stage.style.setProperty("--sessions-staff-count", String(staff.length));
   const header = root.querySelector("#staff-header");
   if (header) header.innerHTML = renderStaffHeader(staff);
   paintCalendarHours(root);
@@ -200,7 +232,7 @@ function applySelectedStaff(root) {
       : stage?.classList.contains("is-view-3day")
         ? "3day"
         : "";
-    if (stageView) applyCalendarLayout(root, stageView);
+    if (stageView) applyCalendarLayout(root, stageView, { keepScroll: true });
   }
 }
 
@@ -211,7 +243,7 @@ function calendarStartDate(root) {
   );
 }
 
-function applyCalendarLayout(root, view) {
+function applyCalendarLayout(root, view, { keepScroll = false } = {}) {
   const stage = root.querySelector(".calendar-stage");
   const days = root.querySelector("#calendar-days");
   const staffDays = root.querySelector("#staff-days");
@@ -221,7 +253,7 @@ function applyCalendarLayout(root, view) {
   stage?.classList.toggle("is-view-3day", isThreeDay);
   stage?.classList.toggle("is-view-week", isWeek);
   if (staffDays) staffDays.hidden = !isStaffDays;
-  if (isStaffDays) {
+  if (isStaffDays && !keepScroll) {
     const scroller = root.querySelector(".home-shell__main");
     if (scroller) scroller.scrollTop = 0;
   }
@@ -252,6 +284,7 @@ function markShiftDays(board, staff) {
   [...board.querySelectorAll(".sessions-staff-day")].forEach((row, index) => {
     const person = staff[index];
     if (!person) return;
+    row.style.setProperty("--member-color", memberColor(person.name));
     row.querySelectorAll("[data-sessions-staff-day]").forEach((cell) => {
       const block = shiftOn(person.name, cell.dataset.sessionsStaffDay);
       if (!block) return;
@@ -337,11 +370,14 @@ function readBookingWhen(root) {
   }
 }
 
-function paintBookingDate(sheet, selected, month, year) {
+function paintMonth(sheet, selected, month, year) {
   const parsed = parseNavigatorDate(selected);
   const body = sheet.querySelector("[data-calendar-date-sheet-body]");
   if (!body) return;
-  body.innerHTML = `<h2 class="sessions-modal__title calendar-date-sheet__title">Edit date</h2>${renderSessionsCalendar({
+  const title = sheet.classList.contains("is-booking")
+    ? `<h2 class="sessions-modal__title calendar-date-sheet__title">Edit date</h2>`
+    : "";
+  body.innerHTML = `${title}${renderSessionsCalendar({
     month: month ?? parsed.getMonth(),
     year: year ?? parsed.getFullYear(),
     rangeStart: selected,
@@ -350,22 +386,10 @@ function paintBookingDate(sheet, selected, month, year) {
 }
 
 function paintDateSheet(sheet, selected) {
-  const parsed = parseNavigatorDate(selected);
-  const body = sheet.querySelector("[data-calendar-date-sheet-body]");
-  if (!body) return;
-  if (sheet.classList.contains("is-booking")) {
-    paintBookingDate(sheet, selected);
-    return;
-  }
-  body.innerHTML = renderSessionsStackedCalendar({
-    startMonth: parsed.getMonth(),
-    startYear: parsed.getFullYear(),
-    rangeStart: selected,
-    selection: "single",
-  });
+  paintMonth(sheet, selected);
 }
 
-function shiftBookingMonth(calendar, delta) {
+function shiftVisibleMonth(calendar, delta) {
   let months = [];
   try {
     months = JSON.parse(calendar?.dataset.calendarMonths || "[]");
@@ -460,13 +484,16 @@ function bindMobileDateSheet(root) {
       return;
     }
 
-    const nav = event.target.closest(".calendar-date-sheet.is-booking .sessions-calendar__nav");
+    const nav = event.target.closest(".calendar-date-sheet:not(.calendar-slot-sheet) .sessions-calendar__nav");
     if (nav) {
       event.preventDefault();
       const delta = nav.classList.contains("sessions-calendar__nav--next") ? 1 : -1;
-      const next = shiftBookingMonth(nav.closest("[data-sessions-calendar]"), delta);
+      const next = shiftVisibleMonth(nav.closest("[data-sessions-calendar]"), delta);
       if (!next) return;
-      paintBookingDate(modal, readBookingWhen(root).date || calendarStartDate(root), next.month, next.year);
+      const selected = modal.classList.contains("is-booking")
+        ? readBookingWhen(root).date || calendarStartDate(root)
+        : calendarStartDate(root);
+      paintMonth(modal, selected, next.month, next.year);
       return;
     }
 

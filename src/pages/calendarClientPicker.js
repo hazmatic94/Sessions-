@@ -1,5 +1,5 @@
 import { renderGhostButton, renderSessionsButton } from "/ds/src/components/button/button.js";
-import { renderSessionsAddClientSurfaceContent } from "/ds/src/components/patterns/addClient.js";
+import * as addClientPatterns from "/ds/src/components/patterns/addClient.js";
 import { renderSessionsAddServiceSurfaceContent } from "/ds/src/components/patterns/addService.js";
 import { renderSessionsMenuDivider } from "/ds/src/components/menu/index.js";
 import { renderSessionsClientCard } from "/ds/src/components/cards/clientCard.js";
@@ -16,7 +16,11 @@ import {
   formatServicePrice,
   listServicesForBooking,
   readServiceFromForm,
+  totalServicePrice,
 } from "/src/data/services.js";
+
+const { renderSessionsAddClientSurfaceContent } = addClientPatterns;
+const syncAddClientScrollCues = addClientPatterns.syncSessionsAddClientScrollCues ?? (() => {});
 
 const BOOKING_PANELS = ["client", "add-client", "service", "add-service", "summary"];
 
@@ -64,20 +68,21 @@ function renderServiceEmpty() {
   </section>`;
 }
 
-function renderServiceCard(service, index) {
+function renderServiceCard(service, index, selected = false) {
   const duration = String(service.duration || "").replace(/(\d+)\s+min/g, "$1min");
   return renderSessionsSelector({
     id: String(index),
     name: service.name,
     duration,
     priceLabel: formatServicePrice(service.priceType, service.price),
+    selected,
   }).replace("data-sessions-selector", `data-sessions-selector data-calendar-service-pick="${index}"`);
 }
 
-function renderServiceList() {
+function renderServiceList(selected = new Set()) {
   const services = listServicesForBooking();
   if (!services.length) return renderServiceEmpty();
-  return `<div class="sessions-selector-list">${services.map((service, index) => renderServiceCard(service, index)).join("")}</div>`;
+  return `<div class="sessions-selector-list">${services.map((service, index) => renderServiceCard(service, index, selected.has(String(index)))).join("")}</div>`;
 }
 
 function renderFlowClose() {
@@ -96,11 +101,16 @@ function renderServicePanel() {
   }).replace("<button ", '<button type="button" data-calendar-booking-service-back ');
   const add = renderSessionsButton({
     variant: "secondary",
-    label: "Add new service",
+    label: "Create new",
     icon: "plus",
   }).replace("<button ", '<button data-calendar-booking-service-add ');
+  const next = renderSessionsButton({
+    variant: "primary",
+    label: "Continue",
+    fullWidth: true,
+  }).replace("<button ", '<button data-calendar-service-continue ');
 
-  return `<div class="calendar-client-picker__panel sessions-surface-step-panel" data-calendar-booking-service-panel hidden><div class="sessions-notifications sessions-surface-step calendar-booking-step"><div class="sessions-client-edit__nav">${back}${renderFlowClose()}</div><div class="sessions-notifications__heading"><h2 class="calendar-client-picker__title">Select a service</h2></div><div class="calendar-service-picker__body" data-calendar-booking-service-list-host>${renderServiceList()}</div><div class="calendar-service-picker__add">${add}</div></div></div>`;
+  return `<div class="calendar-client-picker__panel sessions-surface-step-panel" data-calendar-booking-service-panel hidden><div class="sessions-notifications sessions-surface-step calendar-booking-step"><div class="sessions-client-edit__nav">${back}${renderFlowClose()}</div><div class="sessions-notifications__heading"><h2 class="calendar-client-picker__title">Select a service</h2></div><div class="calendar-service-picker__body" data-calendar-booking-service-list-host>${renderServiceList()}</div><div class="calendar-service-picker__add">${add}</div></div><div class="calendar-service-picker__continue" data-calendar-service-continue-bar hidden>${next}</div></div>`;
 }
 
 function renderAddServicePanel() {
@@ -137,9 +147,14 @@ function formatBookingDate(value) {
   return `${weekday} ${date.getDate()} ${month}`;
 }
 
+function bookingServices(booking) {
+  if (Array.isArray(booking.services) && booking.services.length) return booking.services;
+  return booking.service?.name ? [booking.service] : [];
+}
+
 function renderSummaryBody(booking) {
   const client = booking.client ?? {};
-  const service = booking.service ?? {};
+  const services = bookingServices(booking);
   const card = renderSessionsClientCard({
     name: client.name || "Walk in",
     email: client.email || "Walk-in",
@@ -147,25 +162,26 @@ function renderSummaryBody(booking) {
     avatarInitial: client.avatarInitial,
     editProfileLabel: "Edit profile",
   });
-  const selected = service.name
-    ? renderSessionsSelector({
+  const selected = services
+    .map((service) =>
+      renderSessionsSelector({
         name: service.name,
         duration: String(service.duration || "").replace(/(\d+)\s+min/g, "$1min"),
         priceLabel: formatServicePrice(service.priceType, service.price),
         interactive: false,
-      })
-    : "";
+      }),
+    )
+    .join("");
   const add = renderSessionsButton({
     variant: "secondary",
-    label: "Add new service",
+    label: "Create new",
     icon: "plus",
   }).replace("<button ", '<button data-calendar-booking-service-add ');
-  return `<div class="calendar-booking-summary__when"><button class="calendar-booking-summary__date" type="button" data-calendar-booking-date aria-haspopup="dialog" aria-expanded="false">${escapeHtml(formatBookingDate(booking.date))}<img src="/assets/IconChevronDown.svg" width="20" height="20" alt="" /></button><p class="calendar-booking-summary__time">${escapeHtml(booking.time || "")}</p></div>${card}<section class="calendar-booking-summary__service"><h3 class="calendar-booking-summary__label">Service</h3>${selected}<div class="calendar-service-picker__add">${add}</div></section>`;
+  return `<div class="calendar-booking-summary__when"><button class="calendar-booking-summary__date" type="button" data-calendar-booking-date aria-haspopup="dialog" aria-expanded="false">${escapeHtml(formatBookingDate(booking.date))}<img src="/assets/IconChevronDown.svg" width="20" height="20" alt="" /></button><p class="calendar-booking-summary__time">${escapeHtml(booking.time || "")}</p></div>${card}<section class="calendar-booking-summary__service"><h3 class="calendar-booking-summary__label">${services.length > 1 ? "Services" : "Service"}</h3>${selected}<div class="calendar-service-picker__add">${add}</div></section>`;
 }
 
 function renderSummaryPay(booking) {
-  const service = booking.service ?? {};
-  const price = formatServicePrice(service.priceType, service.price);
+  const price = totalServicePrice(bookingServices(booking));
   return `<button class="calendar-booking-summary__pay" type="button" data-calendar-booking-to-pay><span>To pay</span><img src="/assets/IconCehvronRight.svg" width="20" height="20" alt="" /><strong>${escapeHtml(price)}</strong></button>`;
 }
 
@@ -291,18 +307,21 @@ async function goToBookingPanel(root, panel, { animate = true, direction } = {})
       el.hidden = !isActive;
       el.classList.toggle("is-step-active", isActive);
     }
+    if (panel === "add-client") requestAnimationFrame(() => syncAddClientScrollCues(root));
     return;
   }
 
   if (!from) {
     to.hidden = false;
     to.classList.add("is-step-active");
+    if (panel === "add-client") requestAnimationFrame(() => syncAddClientScrollCues(root));
     return;
   }
 
   pickerStepAnimating = true;
   await runSurfaceStepTransition(steps, from, to, forward ? "forward" : "back");
   pickerStepAnimating = false;
+  if (panel === "add-client") requestAnimationFrame(() => syncAddClientScrollCues(root));
 }
 
 function resetAddClientForm(root) {
@@ -376,10 +395,32 @@ function paintPickerList(root, query = "") {
   host.outerHTML = renderPickerList(query);
 }
 
-function paintServiceList(root) {
+function paintServiceList(root, extraSelected = []) {
   const host = root.querySelector("[data-calendar-booking-service-list-host]");
   if (!host) return;
-  host.innerHTML = renderServiceList();
+  const selected = new Set([
+    ...[...host.querySelectorAll("[data-calendar-service-pick].is-selected")].map((el) => el.dataset.calendarServicePick),
+    ...extraSelected.map(String),
+  ]);
+  host.innerHTML = renderServiceList(selected);
+  syncServiceContinue(root);
+}
+
+function syncServiceContinue(root) {
+  const bar = root.querySelector("[data-calendar-service-continue-bar]");
+  if (bar) bar.hidden = !root.querySelector("[data-calendar-service-pick].is-selected");
+}
+
+function selectedServices(root) {
+  const services = listServicesForBooking();
+  return [...root.querySelectorAll("[data-calendar-service-pick].is-selected")]
+    .map((el) => services[Number(el.dataset.calendarServicePick)])
+    .filter(Boolean);
+}
+
+function toggleServicePick(card) {
+  const on = card.classList.toggle("is-selected");
+  card.setAttribute("aria-pressed", on ? "true" : "false");
 }
 
 function clearCalendarSlotSelection(root) {
@@ -405,8 +446,10 @@ function paintSummary(root) {
   if (pay) pay.innerHTML = renderSummaryPay(booking);
 }
 
-function selectService(root, service) {
-  mergePendingBooking(root, { service });
+function continueWithServices(root) {
+  const services = selectedServices(root);
+  if (!services.length) return;
+  mergePendingBooking(root, { services, service: services[0] });
   paintSummary(root);
   goToBookingPanel(root, "summary", { direction: "forward" });
 }
@@ -474,10 +517,12 @@ export function bindCalendarClientPicker(root) {
       const service = readServiceFromForm(event.target);
       if (!service?.name) return;
       appendService(service);
+      const index = String(listServicesForBooking().length - 1);
       resetAddServiceForm(root);
-      paintServiceList(root);
+      paintServiceList(root, [index]);
       if (addServiceReturn === "summary") {
-        mergePendingBooking(root, { service });
+        const services = selectedServices(root);
+        mergePendingBooking(root, { services, service: services[0] });
         paintSummary(root);
       }
       goToBookingPanel(root, addServiceReturn, { direction: "back" });
@@ -579,12 +624,18 @@ export function bindCalendarClientPicker(root) {
       return;
     }
 
+    if (event.target.closest("[data-calendar-service-continue]")) {
+      event.preventDefault();
+      continueWithServices(root);
+      return;
+    }
+
     const servicePick = event.target.closest("[data-calendar-service-pick]");
     if (servicePick) {
       event.preventDefault();
-      const index = Number(servicePick.dataset.calendarServicePick);
-      const service = listServicesForBooking()[index];
-      if (service) selectService(root, service);
+      event.stopPropagation();
+      toggleServicePick(servicePick);
+      syncServiceContinue(root);
       return;
     }
 
@@ -599,6 +650,15 @@ export function bindCalendarClientPicker(root) {
   });
 
   root.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      const servicePick = event.target.closest?.("[data-calendar-service-pick]");
+      if (servicePick && event.target === servicePick) {
+        event.preventDefault();
+        toggleServicePick(servicePick);
+        syncServiceContinue(root);
+        return;
+      }
+    }
     if (event.key !== "Escape") return;
     const drawer = root.querySelector("[data-calendar-client-picker]");
     if (!drawer || drawer.hidden) return;
@@ -632,4 +692,6 @@ export function bindCalendarClientPicker(root) {
     setPickerOpen(root, false, { resetPending: true });
     clearCalendarSlotSelection(root);
   }, true);
+
+  syncAddClientScrollCues(root);
 }

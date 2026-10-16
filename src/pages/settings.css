@@ -137,11 +137,6 @@
   padding-right: 0;
 }
 
-.settings-edit .sessions-modal__title,
-.settings-edit .sessions-modal__body {
-  padding-right: calc(24px + var(--spacing-12));
-}
-
 .settings-edit .sessions-input {
   width: 100%;
   max-width: none;

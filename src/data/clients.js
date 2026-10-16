@@ -15,7 +15,7 @@ export const CLIENTS = [
     phone: "+61 400112233",
     sales: "A$ 1280",
     createdOn: "Aug 2, 2024",
-    avatarSrc: "/assets/demo/larry.png",
+    avatarSrc: "/assets/demo/larry.jpg",
   },
   {
     name: "Marcus Bell",

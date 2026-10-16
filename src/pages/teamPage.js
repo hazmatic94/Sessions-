@@ -16,7 +16,7 @@ import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderSessionsTeamList, setupSessionsTeamLists } from "/ds/src/components/rows/teamMemberRow.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
-import { loadShiftWeek, shiftLabel, writeShiftDay } from "/src/pages/shiftStore.js";
+import { loadShiftWeek, shiftLabel, tintMemberAvatar, writeShiftDay } from "/src/pages/shiftStore.js";
 
 const navOptions = {
   href: "/",
@@ -29,21 +29,21 @@ const TEAM = [
     email: "harry@sessions.com",
     phone: "+61 461 455 500",
     role: "Workspace Owner",
-    avatarSrc: "/assets/user.png",
+    avatarSrc: "/assets/demo/harry.jpg",
   },
   {
     name: "Kale Emery",
     email: "kale@sessions.com",
     phone: "+61 461 455 500",
     role: "No Access",
-    avatarSrc: "/assets/demo/kale.png",
+    avatarSrc: "/assets/demo/kale.jpg",
   },
   {
     name: "Connor Braddock",
     email: "connor@sessions.com",
     phone: "+61 461 455 500",
     role: "No Access",
-    avatarSrc: "/assets/demo/connor.png",
+    avatarSrc: "/assets/demo/connor.jpg",
   },
 ];
 
@@ -262,6 +262,17 @@ export function mountTeamPage(root) {
   bindTeamView(root);
   bindShiftMenu(root);
   bindShiftToast(root);
+  paintTeamAvatars(root);
+}
+
+function paintTeamAvatars(root) {
+  root.querySelectorAll(".sessions-team-list__row:not(.sessions-team-list__head)").forEach((row) => {
+    const name = row.querySelector(".sessions-team-list__name")?.textContent?.trim();
+    row.querySelectorAll(".sessions-avatar").forEach((avatar) => tintMemberAvatar(avatar, name));
+  });
+  root.querySelectorAll("[data-shift-member]").forEach((row) => {
+    row.querySelectorAll(".sessions-avatar").forEach((avatar) => tintMemberAvatar(avatar, row.dataset.shiftMember));
+  });
 }
 
 function bindTeamSort(root) {
@@ -468,6 +479,7 @@ function openShiftMenu(cell) {
     initial: member?.avatarInitial || member?.name || "",
     size: "medium",
   });
+  tintMemberAvatar(sheet.querySelector(".sessions-avatar"), member?.name);
   sheet.querySelector(".sessions-team-sheet__name").textContent = member?.name || "";
   sheet.querySelector(".sessions-team-sheet__date").textContent = sheetDate(weekDates()[Number(cell.dataset.shiftDay)]);
   if (shiftMenuCell && shiftMenuCell !== cell) {

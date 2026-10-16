@@ -5,10 +5,26 @@ const SHIFT_START = 10 * 60;
 const SHIFT_END = 19 * 60;
 
 export const SHIFT_TEAM = [
-  { name: "Harry Maher", avatarSrc: "/assets/user.png" },
-  { name: "Kale Emery", avatarSrc: "/assets/demo/kale.png" },
-  { name: "Connor Braddock", avatarSrc: "/assets/demo/connor.png" },
+  { name: "Harry Maher", avatarSrc: "/assets/demo/harry.jpg" },
+  { name: "Kale Emery", avatarSrc: "/assets/demo/kale.jpg" },
+  { name: "Connor Braddock", avatarSrc: "/assets/demo/connor.jpg" },
 ];
+
+const MEMBER_COLORS = ["#a5bc9f", "#db783e", "#7eb0d4", "#d4a0c0", "#e2c56b", "#8fbfb2"];
+
+// ponytail: roster order keeps the first colours distinct; a name outside the roster hashes into the same 6
+export function memberColor(name) {
+  const index = SHIFT_TEAM.findIndex((person) => person.name === name);
+  const slot = index >= 0 ? index : [...String(name)].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return MEMBER_COLORS[slot % MEMBER_COLORS.length];
+}
+
+export function tintMemberAvatar(avatar, name) {
+  if (!avatar || !name) return;
+  const color = memberColor(name);
+  avatar.style.setProperty("--avatar-outline-color", color);
+  avatar.style.setProperty("--avatar-ring-color", color);
+}
 
 const SEED_KINDS = {
   "Harry Maher": ["shift", "shift", "shift", "shift", "shift", "shift", "closed"],

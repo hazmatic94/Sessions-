@@ -16,6 +16,15 @@ export function formatServicePrice(priceType, price) {
   return priceType === "from" ? `From ${amount}` : amount;
 }
 
+export function totalServicePrice(services) {
+  const rows = (services || []).filter(Boolean);
+  if (!rows.length) return "";
+  if (rows.every((row) => row.priceType === "free")) return "Free";
+  const total = rows.reduce((sum, row) => sum + (row.priceType === "free" ? 0 : Number(row.price) || 0), 0);
+  const amount = `A$ ${total.toFixed(0)}`;
+  return rows.some((row) => row.priceType === "from") ? `From ${amount}` : amount;
+}
+
 export function listStoredServices() {
   try {
     const parsed = JSON.parse(localStorage.getItem(SERVICES_KEY) || "[]");
