@@ -460,9 +460,19 @@ function selectClient(root, client) {
   goToBookingPanel(root, "service", { direction: "forward" });
 }
 
+function pinAddServiceActions(root) {
+  const form = root.querySelector("[data-calendar-booking-add-service-panel] .sessions-add-client__form");
+  const actions = form?.querySelector(".sessions-add-client__actions");
+  if (actions) form.after(actions);
+}
+
 export function bindCalendarClientPicker(root) {
+  pinAddServiceActions(root);
   const openPicker = (detail) => {
-    const date = root.querySelector("[data-sessions-navigator]")?.dataset.sessionsNavigatorValue ?? "";
+    const date =
+      detail?.date ||
+      root.querySelector("[data-sessions-navigator]")?.dataset.sessionsNavigatorValue ||
+      "";
     root.dataset.calendarPendingBooking = JSON.stringify({ ...(detail ?? {}), date });
     paintPickerList(root, "");
     paintServiceList(root);

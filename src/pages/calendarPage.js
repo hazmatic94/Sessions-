@@ -106,6 +106,8 @@ export function renderCalendarPage() {
             <div id="hour-column" class="calendar-hours"></div>
           </main>
           <div data-sessions-slot-menu-mount></div>
+          ${renderCalendarDayMenu()}
+          ${renderCalendarStaffMenu()}
         </div>
       </div>
       ${renderCalendarDateSheet()}
@@ -276,16 +278,18 @@ function applyCalendarLayout(root, view, { keepScroll = false } = {}) {
       start: selected,
       week: isWeek,
     });
-    markShiftDays(staffDays, staff);
+    markShiftDays(staffDays, staff, selected);
   }
 }
 
-function markShiftDays(board, staff) {
+function markShiftDays(board, staff, selected) {
   [...board.querySelectorAll(".sessions-staff-day")].forEach((row, index) => {
     const person = staff[index];
     if (!person) return;
+    row.dataset.calendarStaff = person.name;
     row.style.setProperty("--member-color", memberColor(person.name));
     row.querySelectorAll("[data-sessions-staff-day]").forEach((cell) => {
+      cell.classList.toggle("is-selected", cell.dataset.sessionsStaffDay === selected);
       const block = shiftOn(person.name, cell.dataset.sessionsStaffDay);
       if (!block) return;
       cell.classList.toggle("is-closed", block.kind !== "shift");
@@ -339,7 +343,169 @@ function bindNavigatorChevrons(root) {
   });
 }
 
+function openCalendarDay(root, date) {
+  setCalendarDate(root, date);
+  root.querySelector('[data-sessions-calendar-view-option="day"]')?.click();
+}
+
+function formatDayMenuTitle(value) {
+  const date = parseNavigatorDate(value);
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  return `${weekday}, ${date.getDate()} ${month}`;
+}
+
+function renderCalendarDayMenu() {
+  return `<div class="calendar-day-menu" data-calendar-day-menu hidden><div class="sessions-menu-panel"><div class="calendar-day-menu__title"><span data-calendar-day-menu-title></span><button type="button" data-calendar-day-menu-close aria-label="Close"><img src="/assets/IconClose.svg" width="20" height="20" alt=""></button></div><hr class="sessions-menu-panel__divider" aria-hidden="true"><button class="sessions-menu-item" type="button" data-calendar-day-menu-action="appointment"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="2.75" y="4.25" width="14.5" height="13" rx="1.5" stroke="currentColor" stroke-width="1.25"/><path d="M2.75 8.25h14.5M6.5 2.75v3M13.5 2.75v3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg><span class="sessions-menu-item__label">Add appointment</span></button><button class="sessions-menu-item" type="button" data-calendar-day-menu-action="blocked"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="2.75" y="4.25" width="14.5" height="13" rx="1.5" stroke="currentColor" stroke-width="1.25"/><path d="M2.75 8.25h14.5M6.5 2.75v3M13.5 2.75v3M8.1 12.1l3.8 3.8M11.9 12.1l-3.8 3.8" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg><span class="sessions-menu-item__label">Add blocked time</span></button><button class="sessions-menu-item" type="button" data-calendar-day-menu-action="day"><img src="/assets/IconDay.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">Day view</span></button></div></div>`;
+}
+
+function renderCalendarStaffMenu() {
+  return `<div class="calendar-staff-menu" data-calendar-staff-menu hidden><div class="sessions-menu-panel"><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="day"><img src="/assets/IconDay.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">Day view</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="3day"><img src="/assets/Icon3Day.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">3 day view</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="week"><img src="/assets/IconWeek.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">Week view</span></button><hr class="sessions-menu-panel__divider" aria-hidden="true"><p class="calendar-staff-menu__heading">Actions</p><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="appointment"><span class="sessions-menu-item__label">Add appointment</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="blocked"><span class="sessions-menu-item__label">Add blocked time</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="time-off"><span class="sessions-menu-item__label">Add time off</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="member"><span class="sessions-menu-item__label">View team member</span></button></div></div>`;
+}
+
+function closeDayMenu(root) {
+  const menu = root.querySelector("[data-calendar-day-menu]");
+  if (menu) menu.hidden = true;
+}
+
+function closeStaffMenu(root) {
+  const menu = root.querySelector("[data-calendar-staff-menu]");
+  if (menu) menu.hidden = true;
+}
+
+function placeMenu(menu, x, y) {
+  menu.hidden = false;
+  const panel = menu.querySelector(".sessions-menu-panel");
+  const width = panel?.offsetWidth || 320;
+  const height = panel?.offsetHeight || 280;
+  menu.style.left = `${Math.min(Math.max(8, x), window.innerWidth - width - 8)}px`;
+  menu.style.top = `${Math.min(Math.max(8, y + 8), window.innerHeight - height - 8)}px`;
+}
+
+function openStaffMenu(root, { staffName, x, y }) {
+  const menu = root.querySelector("[data-calendar-staff-menu]");
+  if (!menu) return;
+  menu.dataset.staff = staffName;
+  placeMenu(menu, x, y);
+}
+
+function openDayMenu(root, { date, staffName, x, y }) {
+  const menu = root.querySelector("[data-calendar-day-menu]");
+  if (!menu) return;
+  menu.dataset.date = date;
+  menu.dataset.staff = staffName;
+  const title = menu.querySelector("[data-calendar-day-menu-title]");
+  if (title) title.textContent = formatDayMenuTitle(date);
+  closeStaffMenu(root);
+  placeMenu(menu, x, y);
+}
+
 function bindCalendarLayout(root) {
+  root.addEventListener("click", (event) => {
+    const menu = root.querySelector("[data-calendar-day-menu]");
+    if (event.target.closest("[data-calendar-day-menu-close]")) {
+      event.preventDefault();
+      closeDayMenu(root);
+      return;
+    }
+    const actionEl = event.target.closest("[data-calendar-day-menu-action]");
+    if (actionEl && menu) {
+      event.preventDefault();
+      const date = menu.dataset.date;
+      const staffName = menu.dataset.staff || "";
+      const action = actionEl.dataset.calendarDayMenuAction;
+      closeDayMenu(root);
+      if (action === "day" && date) openCalendarDay(root, date);
+      if (action === "appointment" && date) {
+        root.dispatchEvent(
+          new CustomEvent("sessions:slot-booking", {
+            bubbles: true,
+            detail: { action: "appointment", date, staffName },
+          }),
+        );
+      }
+      return;
+    }
+    if (event.target.closest("[data-calendar-day-menu]")) return;
+
+    const staffMenu = root.querySelector("[data-calendar-staff-menu]");
+    const staffAction = event.target.closest("[data-calendar-staff-menu-action]");
+    if (staffAction && staffMenu) {
+      event.preventDefault();
+      const staffName = staffMenu.dataset.staff || "";
+      const action = staffAction.dataset.calendarStaffMenuAction;
+      closeStaffMenu(root);
+      if (action === "day" || action === "3day" || action === "week") {
+        root.querySelector(`[data-sessions-calendar-view-option="${action}"]`)?.click();
+      }
+      if (action === "appointment") {
+        root.dispatchEvent(
+          new CustomEvent("sessions:slot-booking", {
+            bubbles: true,
+            detail: { action: "appointment", date: calendarStartDate(root), staffName },
+          }),
+        );
+      }
+      if (action === "member") window.location.assign("/team");
+      return;
+    }
+    if (event.target.closest("[data-calendar-staff-menu]")) return;
+
+    const stage = root.querySelector(".calendar-stage");
+    const staffLabel = event.target.closest(".sessions-staff-day__label");
+    const staffBoard = stage?.classList.contains("is-view-3day") || stage?.classList.contains("is-view-week");
+    if (staffBoard && staffLabel) {
+      event.preventDefault();
+      closeDayMenu(root);
+      openStaffMenu(root, {
+        staffName:
+          staffLabel.closest(".sessions-staff-day")?.dataset.calendarStaff ||
+          staffLabel.querySelector(".sessions-staff-day__name")?.textContent ||
+          "",
+        x: event.clientX,
+        y: event.clientY,
+      });
+      return;
+    }
+    const headerDay = event.target.closest("[data-sessions-calendar-day]");
+    const columnDay = event.target.closest("[data-sessions-staff-day]");
+    if (stage?.classList.contains("is-view-3day") && headerDay?.dataset.sessionsCalendarDay) {
+      event.preventDefault();
+      closeDayMenu(root);
+      closeStaffMenu(root);
+      openCalendarDay(root, headerDay.dataset.sessionsCalendarDay);
+      return;
+    }
+    if (stage?.classList.contains("is-view-3day") && columnDay?.dataset.sessionsStaffDay) {
+      event.preventDefault();
+      openDayMenu(root, {
+        date: columnDay.dataset.sessionsStaffDay,
+        staffName: columnDay.closest(".sessions-staff-day")?.dataset.calendarStaff || "",
+        x: event.clientX,
+        y: event.clientY,
+      });
+      return;
+    }
+    const weekDate = headerDay?.dataset.sessionsCalendarDay || columnDay?.dataset.sessionsStaffDay;
+    if (stage?.classList.contains("is-view-week") && weekDate) {
+      event.preventDefault();
+      closeDayMenu(root);
+      closeStaffMenu(root);
+      openCalendarDay(root, weekDate);
+      return;
+    }
+    closeDayMenu(root);
+    closeStaffMenu(root);
+  });
+  root.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    closeDayMenu(root);
+    closeStaffMenu(root);
+  });
+  root.querySelector(".home-shell__main")?.addEventListener("scroll", () => {
+    closeDayMenu(root);
+    closeStaffMenu(root);
+  });
   root.addEventListener("sessions:calendar-view", (event) => {
     applyCalendarLayout(root, event.detail.view);
   });

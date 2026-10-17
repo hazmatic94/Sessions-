@@ -29,6 +29,12 @@ body {
   width: 100%;
 }
 
+.top-nav__profile-menu .sessions-menu-item__icon--img,
+.top-nav__profile-menu .sessions-menu-item__icon--img img {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+}
+
 .home-shell__body {
   display: flex;
   flex: 1;
