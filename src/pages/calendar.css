@@ -607,12 +607,6 @@
     gap: var(--spacing-4);
     padding: var(--spacing-4);
   }
-
-  .calendar-day-menu .sessions-menu-item,
-  .calendar-staff-menu .sessions-menu-item {
-    height: 40px;
-    padding: 0 var(--spacing-12);
-  }
 }
 
 .calendar-staff-menu__heading {
@@ -672,14 +666,20 @@
   height: 20px;
 }
 
-.calendar-stage.is-view-3day .sessions-calendar-days__cell.is-selected:hover .sessions-calendar-days__label {
+.calendar-stage.is-view-3day .sessions-calendar-days__cell:hover::before,
+.calendar-stage.is-view-week .sessions-calendar-days__cell:hover::before {
+  content: "";
   position: absolute;
   inset: 2px;
-  width: auto;
-  background: var(--black-400);
   border-radius: var(--spacing-8);
-  box-shadow: none;
-  padding-left: calc(var(--spacing-12) + var(--spacing-12) - 2px);
+  background: var(--black-400);
+}
+
+.calendar-stage.is-view-3day .sessions-calendar-days__cell:hover .sessions-calendar-days__label,
+.calendar-stage.is-view-week .sessions-calendar-days__cell:hover .sessions-calendar-days__label {
+  position: relative;
+  z-index: 1;
+  background: transparent;
 }
 
 .calendar-stage.is-view-3day #staff-header,
