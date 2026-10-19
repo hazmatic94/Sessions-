@@ -10,6 +10,14 @@ const DEFAULT_SERVICES = [
   },
 ];
 
+// ponytail: duration labels are "N min", "N hr", or "N hr M min"; anything else defaults to 15 min
+export function durationMinutes(label) {
+  const hours = /(\d+)\s*hr/.exec(String(label || ""));
+  const mins = /(\d+)\s*min/.exec(String(label || ""));
+  const total = (hours ? Number(hours[1]) * 60 : 0) + (mins ? Number(mins[1]) : 0);
+  return total > 0 ? total : 15;
+}
+
 export function formatServicePrice(priceType, price) {
   if (priceType === "free") return "Free";
   const amount = `A$ ${Number(price || 0).toFixed(0)}`;

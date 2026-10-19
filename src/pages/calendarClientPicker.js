@@ -11,6 +11,7 @@ import { runSurfaceStepTransition } from "/ds/src/components/patterns/surfaceSte
 import { renderSessionsSurface } from "/ds/src/components/patterns/surface.js";
 import { escapeHtml } from "/ds/src/utils.js";
 import { listClientsForBooking } from "/src/data/clients.js";
+import { addAppointmentFromBooking, appointmentToPendingBooking, listAppointments } from "/src/data/appointments.js";
 import {
   appendService,
   formatServicePrice,
@@ -174,7 +175,7 @@ function renderSummaryBody(booking) {
     .join("");
   const add = renderSessionsButton({
     variant: "secondary",
-    label: "Create new",
+    label: "Add service",
     icon: "plus",
   }).replace("<button ", '<button data-calendar-booking-service-add ');
   return `<div class="calendar-booking-summary__when"><button class="calendar-booking-summary__date" type="button" data-calendar-booking-date aria-haspopup="dialog" aria-expanded="false">${escapeHtml(formatBookingDate(booking.date))}<img src="/assets/IconChevronDown.svg" width="20" height="20" alt="" /></button><p class="calendar-booking-summary__time">${escapeHtml(booking.time || "")}</p></div>${card}<section class="calendar-booking-summary__service"><h3 class="calendar-booking-summary__label">${services.length > 1 ? "Services" : "Service"}</h3>${selected}<div class="calendar-service-picker__add">${add}</div></section>`;
@@ -362,7 +363,7 @@ function resetPickerChrome(root, { resetPending = false } = {}) {
   if (list) list.outerHTML = renderPickerList();
 }
 
-function setPickerOpen(root, open, { resetPending = false } = {}) {
+function setPickerOpen(root, open, { resetPending = false, initialPanel = "client" } = {}) {
   const drawer = root.querySelector("[data-calendar-client-picker]");
   const scrim = root.querySelector("[data-calendar-client-picker-scrim]");
   if (!drawer) return;
@@ -374,6 +375,10 @@ function setPickerOpen(root, open, { resetPending = false } = {}) {
     drawer.hidden = false;
     if (scrim) scrim.hidden = false;
     resetPickerPanels(root);
+    if (initialPanel !== "client") {
+      void goToBookingPanel(root, initialPanel, { animate: false });
+      if (initialPanel === "summary") paintSummary(root);
+    }
     return;
   }
 
@@ -466,6 +471,13 @@ function pinAddServiceActions(root) {
   if (actions) form.after(actions);
 }
 
+function openBookingCheckout(root, appointment) {
+  root.dataset.calendarPendingBooking = JSON.stringify(appointmentToPendingBooking(appointment));
+  paintPickerList(root, "");
+  paintServiceList(root);
+  setPickerOpen(root, true, { initialPanel: "summary" });
+}
+
 export function bindCalendarClientPicker(root) {
   pinAddServiceActions(root);
   const openPicker = (detail) => {
@@ -484,6 +496,11 @@ export function bindCalendarClientPicker(root) {
   root.addEventListener("sessions:slot-booking", (event) => {
     if (event.detail?.action !== "appointment") return;
     openPicker(event.detail);
+  });
+
+  root.addEventListener("sessions:appointment-checkout", (event) => {
+    const appointment = listAppointments().find((row) => row.id === event.detail?.appointmentId);
+    if (appointment) openBookingCheckout(root, appointment);
   });
 
   root.addEventListener("sessions:booking-when", (event) => {
@@ -598,7 +615,19 @@ export function bindCalendarClientPicker(root) {
       return;
     }
 
-    if (event.target.closest("[data-calendar-booking-book], [data-calendar-booking-pay]")) {
+    if (event.target.closest("[data-calendar-booking-book]")) {
+      event.preventDefault();
+      const pending = pendingBooking(root);
+      if (!pending.appointmentId) {
+        addAppointmentFromBooking(pending);
+        root.dispatchEvent(new CustomEvent("sessions:appointments-changed", { bubbles: true }));
+      }
+      setPickerOpen(root, false, { resetPending: true });
+      clearCalendarSlotSelection(root);
+      return;
+    }
+
+    if (event.target.closest("[data-calendar-booking-pay]")) {
       event.preventDefault();
       setPickerOpen(root, false, { resetPending: true });
       clearCalendarSlotSelection(root);

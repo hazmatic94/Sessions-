@@ -35,6 +35,11 @@ import {
 } from "/ds/src/components/patterns/staffHeader.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
 import { bindCalendarClientPicker, renderCalendarClientPicker } from "/src/pages/calendarClientPicker.js";
+import {
+  renderCalendarAppointmentHoverHost,
+  renderCalendarAppointmentsLayer,
+  setupCalendarAppointmentHovers,
+} from "/src/pages/calendarAppointments.js";
 import { memberColor, outsideQuarters, SHIFT_TEAM, shiftLabel, shiftOn, tintMemberAvatar } from "/src/pages/shiftStore.js";
 
 const STAFF = SHIFT_TEAM;
@@ -81,7 +86,7 @@ function paintCalendarHours(root) {
       hour,
       minute: 0,
     })}${columns}</div>`;
-  }).join("")}${renderSessionsCurrentTimeIndicator()}`;
+  }).join("")}${renderCalendarAppointmentsLayer(staff, date)}${renderSessionsCurrentTimeIndicator()}`;
   if (scroller) {
     scroller.scrollTop = scrollTop;
     scroller.scrollLeft = 0;
@@ -106,6 +111,7 @@ export function renderCalendarPage() {
             <div id="hour-column" class="calendar-hours"></div>
           </main>
           <div data-sessions-slot-menu-mount></div>
+          ${renderCalendarAppointmentHoverHost()}
           ${renderCalendarDayMenu()}
           ${renderCalendarStaffMenu()}
         </div>
@@ -146,6 +152,7 @@ export function mountCalendarPage(root) {
   root.querySelector("#calendar-header").innerHTML = renderSessionsCalendarHeaderRow({
     team: STAFF,
     youName: "Harry Maher",
+    date: toNavigatorDateValue(new Date()),
   });
   syncCalendarHeaderLayout(root);
   window.matchMedia("(max-width: 768px)").addEventListener("change", () => {
@@ -167,6 +174,7 @@ export function mountCalendarPage(root) {
   bindCalendarLayout(root);
   bindMobileDateSheet(root);
   bindCalendarClientPicker(root);
+  setupCalendarAppointmentHovers(root);
   bindMobileMenu(root);
   applySelectedStaff(root);
   paintTeamMenuAvatars(root);
@@ -241,7 +249,7 @@ function applySelectedStaff(root) {
 function calendarStartDate(root) {
   return (
     root.querySelector("[data-sessions-navigator]")?.dataset.sessionsNavigatorValue ??
-    toNavigatorDateValue("2026-08-18")
+    toNavigatorDateValue(new Date())
   );
 }
 
@@ -511,6 +519,9 @@ function bindCalendarLayout(root) {
   });
   root.addEventListener("sessions:team-selection", () => {
     applySelectedStaff(root);
+  });
+  root.addEventListener("sessions:appointments-changed", () => {
+    paintCalendarHours(root);
   });
   root.addEventListener("sessions:navigator-date", (event) => {
     const date = event.detail?.date ?? calendarStartDate(root);

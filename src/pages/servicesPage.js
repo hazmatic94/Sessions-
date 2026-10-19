@@ -13,7 +13,7 @@ import { renderSessionsServiceList, setupSessionsServiceLists } from "/ds/src/co
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
-import { listStoredServices, saveServices } from "/src/data/services.js";
+import { durationMinutes, listStoredServices, saveServices } from "/src/data/services.js";
 
 const navOptions = {
   href: "/",
@@ -40,13 +40,6 @@ function serviceMatches(service, query) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return `${service.name} ${service.description} ${service.duration}`.toLowerCase().includes(q);
-}
-
-// ponytail: duration labels are "N min", "N hr", or "N hr M min"; anything else sorts as 0
-function durationMinutes(label) {
-  const hours = /(\d+)\s*hr/.exec(label);
-  const mins = /(\d+)\s*min/.exec(label);
-  return (hours ? Number(hours[1]) * 60 : 0) + (mins ? Number(mins[1]) : 0);
 }
 
 function visibleServices(services) {

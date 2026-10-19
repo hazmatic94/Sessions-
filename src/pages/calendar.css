@@ -246,13 +246,9 @@
   margin-top: var(--spacing-32);
 }
 
-.calendar-booking-summary .sessions-client-card__edit {
+.calendar-booking-summary .sessions-client-card__edit,
+.calendar-booking-summary .sessions-client-card__actions {
   display: none;
-}
-
-.calendar-booking-summary .sessions-client-card__actions > .sessions-client-card__menu-wrap,
-.calendar-booking-summary .sessions-client-card__menu-wrap > .sessions-button {
-  width: auto;
 }
 
 .calendar-booking-summary__date {
@@ -469,6 +465,62 @@
 .calendar-hours {
   position: relative;
   width: 100%;
+  --sessions-hour-column-height: 140px;
+  --calendar-appointment-gutter: var(--spacing-64);
+}
+
+.calendar-appointments {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.calendar-appointment {
+  position: absolute;
+  box-sizing: border-box;
+  padding: var(--spacing-4);
+  top: calc(var(--appt-start) / 60 * var(--sessions-hour-column-height));
+  height: calc(var(--appt-duration) / 60 * var(--sessions-hour-column-height));
+  left: calc(
+    var(--calendar-appointment-gutter) +
+      var(--appt-staff-index) * ((100% - var(--calendar-appointment-gutter)) / var(--sessions-staff-count, 1))
+  );
+  width: calc((100% - var(--calendar-appointment-gutter)) / var(--sessions-staff-count, 1));
+}
+
+.calendar-appointment .sessions-hour-booking {
+  height: 100%;
+  border-color: color-mix(in srgb, var(--member-color, var(--green-300)) 48%, var(--black-900));
+  background: color-mix(in srgb, var(--member-color, var(--green-300)) 34%, var(--black-900));
+  color: var(--joker-white-50);
+}
+
+.calendar-appointment .sessions-hour-booking__customer {
+  font-weight: var(--text-body-b1-medium-weight);
+}
+
+.calendar-appointment-hover {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.calendar-appointment {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+@media (min-width: 769px) {
+  .calendar-appointment {
+    cursor: pointer;
+  }
+
+  .calendar-appointment:hover .sessions-hour-booking {
+    border-color: color-mix(in srgb, var(--member-color, var(--green-300)) 62%, var(--joker-white-50));
+  }
 }
 
 .calendar-hours > .sessions-current-time {
@@ -556,16 +608,30 @@
   box-shadow: none;
 }
 
-.calendar-stage.is-view-3day .sessions-calendar-days__cell.is-selected .sessions-calendar-days__label {
+.calendar-stage.is-view-3day .sessions-calendar-days__date,
+.calendar-stage.is-view-week .sessions-calendar-days__date {
+  width: auto;
+  height: auto;
+  font-size: var(--text-body-14);
+  font-weight: var(--text-body-weight);
+  line-height: var(--text-body-line-height);
   background: transparent;
 }
 
-.calendar-stage.is-view-3day .sessions-calendar-days__cell.is-selected .sessions-calendar-days__date {
-  background: var(--green-500);
-  color: var(--joker-white-50);
+.calendar-stage.is-view-3day .sessions-calendar-days__cell.is-selected .sessions-calendar-days__label,
+.calendar-stage.is-view-week .sessions-calendar-days__cell.is-selected .sessions-calendar-days__label {
+  background: transparent;
 }
 
-.calendar-stage.is-view-3day .sessions-calendar-days__cell.is-selected .sessions-calendar-days__weekday {
+.calendar-stage.is-view-3day .sessions-calendar-days__cell.is-selected .sessions-calendar-days__date,
+.calendar-stage.is-view-week .sessions-calendar-days__cell.is-selected .sessions-calendar-days__date {
+  display: inline;
+  background: transparent;
+  color: var(--green-300);
+}
+
+.calendar-stage.is-view-3day .sessions-calendar-days__cell.is-selected .sessions-calendar-days__weekday,
+.calendar-stage.is-view-week .sessions-calendar-days__cell.is-selected .sessions-calendar-days__weekday {
   color: var(--green-300);
 }
 
