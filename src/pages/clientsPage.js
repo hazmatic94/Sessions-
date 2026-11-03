@@ -17,6 +17,7 @@ import {
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+import { refreshMobileSheetMenus, setupMobileSheetMenus } from "/src/components/mobileSheet.js";
 import { CLIENTS } from "/src/data/clients.js";
 
 const navOptions = {
@@ -66,6 +67,8 @@ export function mountClientsPage(root) {
   linkPrimaryNav(root, { selected: "Clients" });
   setupSessionsFilterBars(root);
   setupSessionsClientProfiles(root, { clients: CLIENTS });
+  setupMobileSheetMenus(root);
+  refreshMobileSheetMenus(root);
   setupSessionsAddClient(root);
   bindDeleteClient(root);
   root.addEventListener("input", (event) => {

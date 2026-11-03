@@ -1,7 +1,164 @@
+[data-calendar-client-picker] {
+  --calendar-booking-step-padding-inline: 42px;
+  --calendar-booking-step-padding-block-start: 42px;
+  --calendar-booking-step-padding-block-end: 42px;
+}
+
 [data-calendar-client-picker] .sessions-surface {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
+}
+
+[data-calendar-client-picker] .sessions-surface-steps {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+[data-calendar-client-picker] .sessions-surface-step-panel.is-step-active {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.calendar-booking-step {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.calendar-booking-step__nav {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--calendar-booking-step-padding-block-start) var(--calendar-booking-step-padding-inline) 0;
+}
+
+.calendar-booking-step__nav .sessions-client-edit__back {
+  margin-inline-start: calc((var(--button-padding-inline) + var(--border-width-default)) * -1);
+}
+
+.calendar-booking-step__scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  min-height: 0;
+  padding: var(--spacing-16) var(--calendar-booking-step-padding-inline)
+    var(--calendar-booking-step-padding-block-end);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.calendar-booking-step:has(.calendar-booking-checkout) .calendar-booking-step__scroll {
+  padding-bottom: calc(var(--spacing-32) + var(--spacing-32));
+}
+
+.calendar-booking-step__title {
+  margin: 0;
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-big-medium);
+  font-weight: var(--text-body-big-medium-weight);
+  line-height: var(--text-body-big-line-height);
+  letter-spacing: var(--text-body-big-letter-spacing);
+}
+
+.calendar-booking-checkout {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  padding: var(--spacing-16) var(--calendar-booking-step-padding-inline)
+    var(--calendar-booking-step-padding-block-end);
+  background: var(--color-surface-base);
+}
+
+.calendar-booking-checkout::before {
+  content: "";
+  position: absolute;
+  right: calc(var(--calendar-booking-step-padding-inline) * -1);
+  bottom: calc(100% + var(--border-width-default));
+  left: calc(var(--calendar-booking-step-padding-inline) * -1);
+  height: var(--spacing-32);
+  background: linear-gradient(to bottom, transparent, var(--color-surface-base));
+  pointer-events: none;
+}
+
+.calendar-booking-checkout::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: calc(var(--calendar-booking-step-padding-inline) * -1);
+  left: calc(var(--calendar-booking-step-padding-inline) * -1);
+  border-top: var(--border-width-default) solid var(--color-border-default);
+  pointer-events: none;
+}
+
+.calendar-booking-checkout__pay {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--spacing-8);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b1-medium);
+  font-weight: var(--text-body-b1-medium-weight);
+  cursor: pointer;
+}
+
+.calendar-booking-checkout__pay strong {
+  font-weight: var(--text-body-b1-medium-weight);
+}
+
+.calendar-booking-checkout__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-16);
+}
+
+.calendar-booking-checkout__actions[hidden] {
+  display: none;
+}
+
+.calendar-booking-checkout__actions .sessions-button:not(.sessions-button--icon-only) {
+  flex: 1 1 0;
+}
+
+.calendar-booking-checkout__actions:has(.sessions-button:only-of-type) .sessions-button {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.calendar-booking-step__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  padding: var(--spacing-16) var(--calendar-booking-step-padding-inline)
+    var(--calendar-booking-step-padding-block-end);
+}
+
+.calendar-booking-step__actions[hidden] {
+  display: none;
+}
+
+.calendar-booking-step__actions .sessions-button {
+  width: 100%;
 }
 
 .calendar-client-picker__panel {
@@ -11,16 +168,11 @@
   min-height: 0;
 }
 
-[data-calendar-client-picker] .sessions-notifications.calendar-client-picker {
+[data-calendar-client-picker-list-panel] .calendar-client-picker__intro {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--spacing-16);
-  min-height: 0;
-  padding: 42px 0 42px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 [data-calendar-booking-add-service-panel][data-sessions-add-service] {
@@ -33,12 +185,11 @@
   gap: 0;
 }
 
-[data-calendar-booking-service-panel],
 [data-calendar-booking-add-service-panel] {
   box-sizing: border-box;
   flex: 1 1 auto;
   min-height: 0;
-  padding-bottom: 42px;
+  padding-bottom: var(--calendar-booking-step-padding-block-end);
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -99,12 +250,12 @@
   background: var(--color-surface-base);
 }
 
-.calendar-service-picker__body {
-  margin-top: var(--spacing-16);
+.calendar-booking-step__scroll > .calendar-service-picker__body {
+  margin-top: 0;
 }
 
 .calendar-service-picker__add {
-  margin-top: var(--spacing-32);
+  margin-top: 0;
 }
 
 .calendar-service-picker__add .sessions-button {
@@ -114,28 +265,6 @@
 [data-calendar-booking-service-panel] {
   overflow: hidden;
   padding-bottom: 0;
-}
-
-[data-calendar-booking-service-panel] > .sessions-notifications {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding-bottom: 42px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.calendar-service-picker__continue {
-  flex: 0 0 auto;
-  padding: 0 42px 42px;
-}
-
-.calendar-service-picker__continue[hidden] {
-  display: none;
-}
-
-.calendar-service-picker__continue .sessions-button {
-  width: 100%;
 }
 
 .calendar-service-picker__empty.services-empty {
@@ -165,14 +294,6 @@
   margin: 0;
 }
 
-.calendar-client-picker__intro {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-16);
-  width: 100%;
-  padding-inline: 42px;
-}
-
 .calendar-client-picker__intro .sessions-search {
   display: flex;
   width: 100%;
@@ -182,16 +303,6 @@
   border-radius: var(--spacing-12);
 }
 
-.calendar-client-picker__title {
-  margin: 0;
-  color: var(--joker-white-50);
-  font-family: var(--font);
-  font-size: var(--text-body-big-medium);
-  font-weight: var(--text-body-big-medium-weight);
-  line-height: var(--text-body-line-height);
-  letter-spacing: var(--text-body-big-letter-spacing);
-}
-
 .calendar-client-picker__actions,
 .calendar-client-picker__list,
 .calendar-client-picker__list-wrap {
@@ -199,35 +310,36 @@
   min-width: 0;
 }
 
+[data-calendar-client-picker-list-panel] .calendar-booking-step__scroll {
+  padding-inline: 0;
+}
+
+[data-calendar-client-picker-list-panel] .calendar-booking-step__title,
+[data-calendar-client-picker-list-panel] .calendar-client-picker__intro {
+  padding-inline: var(--calendar-booking-step-padding-inline);
+}
+
+[data-calendar-client-picker-list-panel] .sessions-client-row {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--spacing-24) var(--calendar-booking-step-padding-inline);
+  border-radius: 0;
+}
+
 [data-calendar-client-picker-list-panel] .sessions-menu-panel__divider {
   flex-shrink: 0;
   box-sizing: border-box;
   width: auto;
-  margin-inline: 42px;
+  margin-inline: var(--calendar-booking-step-padding-inline);
 }
 
-.calendar-booking-summary {
+.calendar-booking-summary__body {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  min-height: 0;
-  padding: 42px;
+  gap: var(--spacing-24);
 }
 
-.calendar-booking-summary__scroll {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: var(--spacing-32);
-  min-height: 0;
-  /* Clear the 32px fade, then keep one standard gap so the last row isn't clipped. */
-  padding-bottom: calc(var(--spacing-32) + var(--spacing-32));
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.calendar-booking-summary .sessions-client-card {
+.calendar-booking-summary__body .sessions-client-card {
   width: 100%;
   margin: 0;
   padding: 0;
@@ -238,16 +350,12 @@
   animation: none;
 }
 
-.calendar-booking-summary .sessions-client-card__email {
+.calendar-booking-summary__body .sessions-client-card__email {
   text-decoration: underline;
 }
 
-.calendar-booking-summary__when + .sessions-client-card {
-  margin-top: var(--spacing-32);
-}
-
-.calendar-booking-summary .sessions-client-card__edit,
-.calendar-booking-summary .sessions-client-card__actions {
+.calendar-booking-summary__body .sessions-client-card__edit,
+.calendar-booking-summary__body .sessions-client-card__actions {
   display: none;
 }
 
@@ -279,8 +387,8 @@
 .calendar-booking-summary__service {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-16);
-  margin-top: var(--spacing-32);
+  gap: var(--spacing-12);
+  margin-top: 0;
 }
 
 .calendar-booking-summary__service .calendar-service-picker__add {
@@ -296,79 +404,406 @@
   line-height: var(--text-body-b1-line-height);
 }
 
-.calendar-booking-summary__pay {
+.calendar-booking-time {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.calendar-booking-time__staff-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+}
+
+.calendar-booking-time__staff-menu {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.calendar-booking-time__staff-menu.is-open {
+  z-index: 4;
+}
+
+[data-calendar-booking-time-panel] .calendar-booking-step__scroll:has(.calendar-booking-time__staff-menu.is-open) {
+  overflow: visible;
+}
+
+.calendar-booking-time__staff-panel {
+  position: absolute;
+  top: calc(100% + var(--spacing-8));
+  left: 0;
+  z-index: 5;
+  min-width: min(100%, 320px);
+  width: max-content;
+  max-width: min(360px, calc(100vw - 48px));
+}
+
+.calendar-booking-time__staff-panel .calendar-booking-time__staff-panel-inner {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  width: 100%;
+  min-width: 280px;
+  padding: var(--spacing-4);
+}
+
+.calendar-booking-time__staff-option.sessions-menu-item {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) 20px;
   align-items: center;
   gap: var(--spacing-8);
+  box-sizing: border-box;
   width: 100%;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  height: auto;
+  min-height: 40px;
+  padding: var(--spacing-8) var(--spacing-12);
+}
+
+.calendar-booking-time__staff-option .sessions-team-menu__avatar {
+  --avatar-size: 30px;
+  --avatar-padding: 1px;
+  width: 30px;
+  height: 30px;
+}
+
+.calendar-booking-time__staff-option .sessions-menu-item__label {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+  font-size: var(--text-body-14);
+  font-weight: var(--text-body-b1-medium-weight);
+  line-height: var(--text-body-line-height);
+}
+
+.calendar-booking-time__staff-check {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--joker-white-50);
+}
+
+.calendar-booking-time__staff-menu.is-open .calendar-booking-time__staff img[src*="IconChevronDown"] {
+  transform: rotate(180deg);
+}
+
+.calendar-booking-time__staff {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  box-sizing: border-box;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  height: var(--button-height);
+  min-height: var(--button-height);
+  padding: 0 var(--spacing-12) 0 var(--spacing-4);
+  border: var(--border-width-default) solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-elevated);
+  color: var(--joker-white-50);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease;
+}
+
+.calendar-booking-time__staff:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-default);
+}
+
+.calendar-booking-time__staff .sessions-avatar {
+  --avatar-size: 32px;
+  --avatar-initial-size: var(--text-body-14);
+  --avatar-outline-color: var(--member-color, var(--green-400));
+  --avatar-ring-color: var(--member-color, var(--green-900));
+}
+
+.calendar-booking-time__staff-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body-14);
+  font-weight: var(--text-body-b1-medium-weight);
+  line-height: var(--text-body-line-height);
+}
+
+.calendar-booking-time__staff img[src*="IconChevronDown"] {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  opacity: 0.9;
+  transition: transform var(--motion-fast) ease;
+}
+
+.calendar-booking-time__month {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+}
+
+.calendar-booking-time__month-label {
   color: var(--joker-white-50);
   font-family: var(--font);
   font-size: var(--text-body-b1-medium);
   font-weight: var(--text-body-b1-medium-weight);
+}
+
+.calendar-booking-time__month-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--joker-white-50);
   cursor: pointer;
+  transition: background-color var(--motion-fast) ease;
 }
 
-.calendar-booking-summary__pay strong {
-  font-weight: var(--text-body-b1-medium-weight);
+.calendar-booking-time__month-nav:hover {
+  background: var(--color-surface-hover);
 }
 
-.calendar-booking-summary__footer {
-  position: relative;
-  z-index: 1;
+.calendar-booking-time__days {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-12);
+  padding-bottom: var(--spacing-4);
+}
+
+.calendar-booking-time__day {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  gap: var(--spacing-16);
-  padding-top: var(--spacing-16);
-}
-
-.calendar-booking-summary__footer::before {
-  content: "";
-  position: absolute;
-  right: -42px;
-  bottom: calc(100% + var(--border-width-default));
-  left: -42px;
-  height: var(--spacing-32);
-  background: linear-gradient(to bottom, transparent, var(--color-surface-base));
-  pointer-events: none;
-}
-
-.calendar-booking-summary__footer::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: -42px;
-  left: -42px;
-  border-top: var(--border-width-default) solid var(--color-border-default);
-  pointer-events: none;
-}
-
-.calendar-booking-summary__actions {
-  display: flex;
   align-items: center;
-  gap: var(--spacing-16);
+  gap: var(--spacing-8);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--joker-white-50);
+  font: inherit;
+  cursor: pointer;
 }
 
-.calendar-booking-summary__actions .sessions-button:not(.sessions-button--icon-only) {
+.calendar-booking-time__day-circle {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: var(--border-width-default) solid var(--color-border-subtle);
+  border-radius: 50%;
+  background: var(--color-surface-elevated);
+  transition:
+    background-color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease;
+}
+
+.calendar-booking-time__day:not(:disabled):not(.is-selected):hover .calendar-booking-time__day-circle {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-default);
+}
+
+.calendar-booking-time__day.is-selected .calendar-booking-time__day-circle {
+  border-color: var(--green-300);
+  background: var(--color-surface-elevated);
+}
+
+.calendar-booking-time__day.is-closed {
+  cursor: not-allowed;
+}
+
+.calendar-booking-time__day.is-closed .calendar-booking-time__day-circle,
+.calendar-booking-time__day.is-closed .calendar-booking-time__weekday {
+  opacity: 0.45;
+}
+
+.calendar-booking-time__day.is-closed .calendar-booking-time__daynum {
+  text-decoration: line-through;
+}
+
+.calendar-booking-time__weekday {
+  font-size: 11px;
+  font-weight: var(--text-body-b1-medium-weight);
+  color: var(--joker-white-50);
+}
+
+.calendar-booking-time__daynum {
+  font-size: var(--text-body-14);
+  font-weight: var(--text-body-b1-medium-weight);
+  line-height: 1;
+}
+
+.calendar-booking-time__times-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8) var(--spacing-12);
+  color: var(--joker-white-50);
+  font-size: var(--text-body-b1-medium);
+  font-weight: var(--text-body-b1-medium-weight);
+}
+
+.calendar-booking-time__slots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  padding-bottom: var(--spacing-8);
+}
+
+.calendar-booking-time__slot {
+  width: 100%;
+  padding: var(--spacing-16);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--spacing-12);
+  background: var(--color-surface-elevated);
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b1-medium);
+  font-weight: var(--text-body-b1-medium-weight);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out);
+}
+
+.calendar-booking-time__slot:hover {
+  background: var(--color-surface-hover);
+}
+
+.calendar-booking-time__slot.is-selected {
+  border-color: var(--green-300);
+  background: var(--color-surface-elevated);
+}
+
+.calendar-booking-time__slot.is-selected:hover {
+  background: var(--color-surface-elevated);
+}
+
+[data-calendar-booking-time-panel],
+[data-calendar-booking-summary-panel],
+[data-calendar-booking-service-panel],
+[data-calendar-client-picker-list-panel] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+[data-calendar-booking-summary-panel] .calendar-booking-step {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+[data-calendar-booking-summary-panel] .calendar-booking-step__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: var(--spacing-16);
+}
+
+[data-calendar-booking-summary-panel] .calendar-booking-step:has(.calendar-booking-checkout) .calendar-booking-step__scroll {
+  padding-bottom: var(--spacing-16);
+}
+
+[data-calendar-booking-summary-panel] .calendar-booking-checkout {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+[data-calendar-booking-time-panel] .calendar-booking-time,
+[data-calendar-booking-time-panel] .calendar-booking-step {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+[data-calendar-booking-time-panel] .calendar-booking-time__staff-row,
+[data-calendar-booking-time-panel] .calendar-booking-time__month,
+[data-calendar-booking-time-panel] .calendar-booking-time__days,
+[data-calendar-booking-time-panel] .calendar-booking-time__times-head {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* Staff → date block → times: looser between sections, month+days grouped, label tight to slots */
+[data-calendar-booking-time-panel] .calendar-booking-time__month {
+  margin-top: var(--spacing-32);
+}
+
+[data-calendar-booking-time-panel] .calendar-booking-time__days {
+  margin-top: calc(var(--spacing-8) - var(--spacing-16));
+  padding-bottom: 0;
+}
+
+[data-calendar-booking-time-panel] .calendar-booking-time__times-head {
+  margin-top: var(--spacing-32);
+}
+
+[data-calendar-booking-time-panel] .calendar-booking-time__slots {
+  margin-top: calc(var(--spacing-8) - var(--spacing-16));
+}
+
+[data-calendar-booking-time-panel] .calendar-booking-time__days {
+  box-sizing: border-box;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  width: auto;
+  margin-inline: calc(var(--calendar-booking-step-padding-inline) * -1);
+  padding-inline: var(--calendar-booking-step-padding-inline);
+  overflow: visible;
+}
+
+[data-calendar-booking-time-panel] .calendar-booking-time__day {
   flex: 1 1 0;
+  min-width: 0;
+  max-width: 52px;
 }
 
-@media (min-width: 769px) {
-  /* ponytail: picker exception — full-bleed row hovers inside the 440px surface */
-  [data-calendar-client-picker] .sessions-client-row {
-    box-sizing: border-box;
-    width: 100%;
-    padding: var(--spacing-24) 42px;
-    border-radius: 0;
+[data-calendar-booking-time-panel] .calendar-booking-time__day-circle {
+  width: 36px;
+  height: 36px;
+  margin-inline: auto;
+}
+
+@media (max-width: 768px) {
+  [data-calendar-booking-time-panel] .calendar-booking-time__day-circle {
+    width: 32px;
+    height: 32px;
   }
 }
 
 @media (max-width: 768px) {
+  [data-calendar-client-picker] {
+    --calendar-booking-step-padding-inline: 24px;
+    --calendar-booking-step-padding-block-start: 32px;
+    --calendar-booking-step-padding-block-end: 32px;
+  }
+
+  [data-calendar-client-picker] .calendar-booking-checkout {
+    background: var(--black-900);
+  }
+
+  [data-calendar-client-picker] .calendar-booking-checkout::before {
+    background: linear-gradient(to bottom, transparent, var(--black-900));
+  }
+
   [data-calendar-client-picker].sessions-surface-drawer {
     top: var(--mobile-menu-height);
     right: 0;
@@ -405,46 +840,6 @@
     padding-bottom: 0;
   }
 
-  [data-calendar-client-picker] .sessions-notifications.calendar-client-picker,
-  [data-calendar-client-picker] .sessions-notifications.sessions-surface-step,
-  [data-calendar-client-picker] .calendar-booking-summary {
-    padding: 32px 24px;
-  }
-
-  .calendar-booking-summary__footer::before,
-  .calendar-booking-summary__footer::after {
-    right: -24px;
-    left: -24px;
-  }
-
-  [data-calendar-client-picker] .calendar-booking-summary .sessions-client-profile__nav {
-    margin-bottom: 0;
-  }
-
-  .calendar-booking-summary__footer::before {
-    background: linear-gradient(to bottom, transparent, var(--black-900));
-  }
-
-  [data-calendar-client-picker] .calendar-client-picker__intro {
-    padding-inline: 0;
-  }
-
-  .calendar-service-picker__continue {
-    padding: 0 24px 32px;
-  }
-
-  [data-calendar-client-picker] .sessions-client-profile__nav {
-    margin-bottom: calc(var(--spacing-32) - var(--spacing-16));
-  }
-
-  [data-calendar-client-picker] .sessions-client-row {
-    width: 100%;
-    padding-inline: 0;
-  }
-
-  [data-calendar-client-picker-list-panel] .sessions-menu-panel__divider {
-    margin-inline: 0;
-  }
 }
 
 .calendar-stage {
@@ -493,6 +888,13 @@
   height: 100%;
   border-color: color-mix(in srgb, var(--member-color, var(--green-300)) 48%, var(--black-900));
   background: color-mix(in srgb, var(--member-color, var(--green-300)) 34%, var(--black-900));
+  color: var(--joker-white-50);
+}
+
+.calendar-appointment .sessions-hour-booking__summary,
+.calendar-appointment .sessions-hour-booking__time,
+.calendar-appointment .sessions-hour-booking__customer,
+.calendar-appointment .sessions-hour-booking__service-type {
   color: var(--joker-white-50);
 }
 
@@ -566,7 +968,7 @@
 
 .calendar-hour > .sessions-hour-column[data-calendar-staff] .sessions-hour-column__hover {
   background: color-mix(in srgb, var(--member-color) 36%, var(--color-surface-base));
-  color: var(--member-color);
+  color: var(--joker-white-50);
 }
 
 .calendar-staff .sessions-staff-header + .sessions-staff-header {

@@ -1,4 +1,4 @@
-import { renderGhostButton, renderSessionsButton } from "/ds/src/components/button/button.js";
+import { renderSessionsButton } from "/ds/src/components/button/button.js";
 import * as addClientPatterns from "/ds/src/components/patterns/addClient.js";
 import { renderSessionsAddServiceSurfaceContent } from "/ds/src/components/patterns/addService.js";
 import { renderSessionsMenuDivider } from "/ds/src/components/menu/index.js";
@@ -8,10 +8,28 @@ import { renderSessionsSearch } from "/ds/src/components/search/search.js";
 import { renderSessionsSelector } from "/ds/src/components/selector/selector.js";
 import { closeClientActions, setClientActionsOpen } from "/ds/src/components/patterns/clientProfile.js";
 import { runSurfaceStepTransition } from "/ds/src/components/patterns/surfaceSteps.js";
+import { setSessionsSurfaceDrawerOpen } from "/src/utils/surfaceDrawer.js";
 import { renderSessionsSurface } from "/ds/src/components/patterns/surface.js";
 import { escapeHtml } from "/ds/src/utils.js";
 import { listClientsForBooking } from "/src/data/clients.js";
-import { addAppointmentFromBooking, appointmentToPendingBooking, listAppointments } from "/src/data/appointments.js";
+import {
+  addAppointmentFromBooking,
+  appointmentToPendingBooking,
+  listAppointments,
+  normalizeBookingForSave,
+} from "/src/data/appointments.js";
+import {
+  renderBookingCheckoutFooter,
+  renderBookingPayRow,
+  renderBookingStep,
+  renderBookingStepActionsFooter,
+} from "/src/pages/calendarBookingShell.js";
+import {
+  paintBookingTimePanel,
+  renderBookingTimePanel,
+  setBookingTimeStaffMenuOpen,
+  shiftBookingMonth,
+} from "/src/pages/calendarBookingTimePanel.js";
 import {
   appendService,
   formatServicePrice,
@@ -23,11 +41,12 @@ import {
 const { renderSessionsAddClientSurfaceContent } = addClientPatterns;
 const syncAddClientScrollCues = addClientPatterns.syncSessionsAddClientScrollCues ?? (() => {});
 
-const BOOKING_PANELS = ["client", "add-client", "service", "add-service", "summary"];
+const BOOKING_PANELS = ["client", "add-client", "service", "add-service", "time", "summary"];
 
 const PANEL_LABELS = {
   client: "Select a client",
   "add-client": "Add new client",
+  time: "Select a time",
   service: "Select a service",
   "add-service": "Service details",
   summary: "Appointment",
@@ -86,20 +105,7 @@ function renderServiceList(selected = new Set()) {
   return `<div class="sessions-selector-list">${services.map((service, index) => renderServiceCard(service, index, selected.has(String(index)))).join("")}</div>`;
 }
 
-function renderFlowClose() {
-  return renderGhostButton({
-    icon: "close",
-    ariaLabel: "Close",
-    className: "sessions-client-profile__close",
-  }).replace("<button ", '<button type="button" data-calendar-client-picker-close ');
-}
-
 function renderServicePanel() {
-  const back = renderGhostButton({
-    label: "Back",
-    icon: "chevron-left",
-    className: "sessions-client-edit__back",
-  }).replace("<button ", '<button type="button" data-calendar-booking-service-back ');
   const add = renderSessionsButton({
     variant: "secondary",
     label: "Create new",
@@ -110,8 +116,19 @@ function renderServicePanel() {
     label: "Continue",
     fullWidth: true,
   }).replace("<button ", '<button data-calendar-service-continue ');
+  const body = `<div class="calendar-service-picker__body" data-calendar-booking-service-list-host>${renderServiceList()}</div><div class="calendar-service-picker__add">${add}</div>`;
+  const footer = renderBookingStepActionsFooter({
+    actionsHtml: next,
+    actionsHidden: true,
+    actionsBarAttribute: "data-calendar-service-continue-bar",
+  });
 
-  return `<div class="calendar-client-picker__panel sessions-surface-step-panel" data-calendar-booking-service-panel hidden><div class="sessions-notifications sessions-surface-step calendar-booking-step"><div class="sessions-client-edit__nav">${back}${renderFlowClose()}</div><div class="sessions-notifications__heading"><h2 class="calendar-client-picker__title">Select a service</h2></div><div class="calendar-service-picker__body" data-calendar-booking-service-list-host>${renderServiceList()}</div><div class="calendar-service-picker__add">${add}</div></div><div class="calendar-service-picker__continue" data-calendar-service-continue-bar hidden>${next}</div></div>`;
+  return `<div class="calendar-client-picker__panel sessions-surface-step-panel" data-calendar-booking-service-panel hidden>${renderBookingStep({
+    backTo: "client",
+    title: "Select a service",
+    body,
+    footer,
+  })}</div>`;
 }
 
 function renderAddServicePanel() {
@@ -181,17 +198,7 @@ function renderSummaryBody(booking) {
   return `<div class="calendar-booking-summary__when"><button class="calendar-booking-summary__date" type="button" data-calendar-booking-date aria-haspopup="dialog" aria-expanded="false">${escapeHtml(formatBookingDate(booking.date))}<img src="/assets/IconChevronDown.svg" width="20" height="20" alt="" /></button><p class="calendar-booking-summary__time">${escapeHtml(booking.time || "")}</p></div>${card}<section class="calendar-booking-summary__service"><h3 class="calendar-booking-summary__label">${services.length > 1 ? "Services" : "Service"}</h3>${selected}<div class="calendar-service-picker__add">${add}</div></section>`;
 }
 
-function renderSummaryPay(booking) {
-  const price = totalServicePrice(bookingServices(booking));
-  return `<button class="calendar-booking-summary__pay" type="button" data-calendar-booking-to-pay><span>To pay</span><img src="/assets/IconCehvronRight.svg" width="20" height="20" alt="" /><strong>${escapeHtml(price)}</strong></button>`;
-}
-
 function renderSummaryPanel() {
-  const back = renderGhostButton({
-    label: "Back",
-    icon: "chevron-left",
-    className: "sessions-client-profile__back",
-  }).replace("<button ", '<button type="button" data-calendar-booking-summary-back ');
   const book = renderSessionsButton({ variant: "secondary", label: "Book in" }).replace(
     "<button ",
     '<button data-calendar-booking-book ',
@@ -200,8 +207,16 @@ function renderSummaryPanel() {
     "<button ",
     '<button data-calendar-booking-pay ',
   );
+  const footer = renderBookingCheckoutFooter({
+    payHostAttribute: "data-calendar-booking-summary-pay",
+    actionsHtml: `${book}${pay}`,
+  });
 
-  return `<div class="calendar-client-picker__panel sessions-surface-step-panel" data-calendar-booking-summary-panel hidden><div class="calendar-booking-summary"><div class="calendar-booking-summary__scroll"><div class="sessions-client-profile__nav">${back}${renderFlowClose()}</div><div data-calendar-booking-summary-host></div></div><div class="calendar-booking-summary__footer"><div data-calendar-booking-summary-pay></div><div class="calendar-booking-summary__actions">${book}${pay}</div></div></div></div>`;
+  return `<div class="calendar-client-picker__panel sessions-surface-step-panel" data-calendar-booking-summary-panel hidden>${renderBookingStep({
+    backTo: "summary-prev",
+    body: '<div class="calendar-booking-summary__body" data-calendar-booking-summary-host></div>',
+    footer,
+  })}</div>`;
 }
 
 function renderListPanel() {
@@ -219,13 +234,13 @@ function renderListPanel() {
     '<button data-calendar-client-walk-in ',
   );
 
-  const pageBack = renderGhostButton({
-    label: "Back",
-    icon: "chevron-left",
-    className: "sessions-client-profile__back",
-  }).replace("<button ", '<button type="button" data-calendar-client-picker-close ');
+  const body = `<div class="calendar-client-picker__intro">${search}</div><div class="calendar-client-picker__actions">${addNew}${walkIn}</div>${renderSessionsMenuDivider()}<div class="calendar-client-picker__list-wrap">${renderPickerList()}</div>`;
 
-  return `<div class="calendar-client-picker__panel sessions-surface-step-panel is-step-active" data-calendar-client-picker-list-panel><div class="sessions-notifications calendar-client-picker"><div class="sessions-client-profile__nav">${pageBack}${renderFlowClose()}</div><div class="calendar-client-picker__intro"><h2 class="calendar-client-picker__title">Select a client</h2>${search}</div><div class="calendar-client-picker__actions">${addNew}${walkIn}</div>${renderSessionsMenuDivider()}<div class="calendar-client-picker__list-wrap">${renderPickerList()}</div></div></div>`;
+  return `<div class="calendar-client-picker__panel sessions-surface-step-panel is-step-active" data-calendar-client-picker-list-panel>${renderBookingStep({
+    backTo: "close",
+    title: "Select a client",
+    body,
+  })}</div>`;
 }
 
 export function renderCalendarClientPicker() {
@@ -236,7 +251,7 @@ export function renderCalendarClientPicker() {
     className: "sessions-surface-close",
   }).replace("<button ", '<button data-calendar-client-picker-close ');
 
-  return `<div class="sessions-surface-scrim" data-calendar-client-picker-scrim hidden></div><div class="sessions-surface-drawer" data-calendar-client-picker role="dialog" aria-label="Select a client" hidden>${close}${renderSessionsSurface({ children: `<div class="sessions-surface-steps">${renderListPanel()}${renderAddClientPanel()}${renderServicePanel()}${renderAddServicePanel()}${renderSummaryPanel()}</div>` })}</div>`;
+  return `<div class="sessions-surface-scrim" data-calendar-client-picker-scrim hidden></div><div class="sessions-surface-drawer is-sessions-inner-page" data-calendar-client-picker role="dialog" aria-label="Select a client" hidden>${close}${renderSessionsSurface({ children: `<div class="sessions-surface-steps">${renderListPanel()}${renderAddClientPanel()}${renderBookingTimePanel()}${renderServicePanel()}${renderAddServicePanel()}${renderSummaryPanel()}</div>` })}</div>`;
 }
 
 let pickerStepAnimating = false;
@@ -247,6 +262,7 @@ function panelEl(root, panel) {
   const map = {
     client: "[data-calendar-client-picker-list-panel]",
     "add-client": "[data-calendar-client-picker-add-panel]",
+    time: "[data-calendar-booking-time-panel]",
     service: "[data-calendar-booking-service-panel]",
     "add-service": "[data-calendar-booking-add-service-panel]",
     summary: "[data-calendar-booking-summary-panel]",
@@ -258,6 +274,7 @@ function activePanel(root) {
   const panel = root.querySelector("[data-calendar-client-picker] .sessions-surface-step-panel.is-step-active");
   if (!panel) return "client";
   if (panel.matches("[data-calendar-client-picker-add-panel]")) return "add-client";
+  if (panel.matches("[data-calendar-booking-time-panel]")) return "time";
   if (panel.matches("[data-calendar-booking-service-panel]")) return "service";
   if (panel.matches("[data-calendar-booking-add-service-panel]")) return "add-service";
   if (panel.matches("[data-calendar-booking-summary-panel]")) return "summary";
@@ -352,8 +369,16 @@ function mergePendingBooking(root, patch) {
   root.dataset.calendarPendingBooking = JSON.stringify({ ...current, ...patch });
 }
 
+function summaryBackPanel(root) {
+  const booking = pendingBooking(root);
+  return booking.appointmentId ? "service" : "time";
+}
+
 function resetPickerChrome(root, { resetPending = false } = {}) {
-  if (resetPending) delete root.dataset.calendarPendingBooking;
+  if (resetPending) {
+    delete root.dataset.calendarPendingBooking;
+    delete root.dataset.calendarBookingFromAdd;
+  }
   resetPickerPanels(root);
   resetAddClientForm(root);
   resetAddServiceForm(root);
@@ -366,32 +391,30 @@ function resetPickerChrome(root, { resetPending = false } = {}) {
 function setPickerOpen(root, open, { resetPending = false, initialPanel = "client" } = {}) {
   const drawer = root.querySelector("[data-calendar-client-picker]");
   const scrim = root.querySelector("[data-calendar-client-picker-scrim]");
-  if (!drawer) return;
+  if (!drawer) return Promise.resolve();
 
   if (open) {
     pickerCloseToken += 1;
-    drawer.classList.remove("is-closing");
-    scrim?.classList.remove("is-closing");
-    drawer.hidden = false;
-    if (scrim) scrim.hidden = false;
-    resetPickerPanels(root);
-    if (initialPanel !== "client") {
-      void goToBookingPanel(root, initialPanel, { animate: false });
-      if (initialPanel === "summary") paintSummary(root);
-    }
-    return;
+    return setSessionsSurfaceDrawerOpen({ drawer, scrim, open: true, hideScrimOnMobile: true }).then(() => {
+      resetPickerPanels(root);
+      if (initialPanel !== "client") {
+        void goToBookingPanel(root, initialPanel, { animate: false });
+        if (initialPanel === "summary") paintSummary(root);
+      }
+    });
   }
 
-  const finish = (token) => {
-    if (token !== pickerCloseToken) return;
-    drawer.classList.remove("is-closing");
-    scrim?.classList.remove("is-closing");
-    drawer.hidden = true;
-    if (scrim) scrim.hidden = true;
-    resetPickerChrome(root, { resetPending });
-  };
-
-  finish(++pickerCloseToken);
+  const token = ++pickerCloseToken;
+  return setSessionsSurfaceDrawerOpen({
+    drawer,
+    scrim,
+    open: false,
+    hideScrimOnMobile: true,
+    onClosed: () => {
+      if (token !== pickerCloseToken) return;
+      resetPickerChrome(root, { resetPending });
+    },
+  });
 }
 
 function paintPickerList(root, query = "") {
@@ -448,19 +471,27 @@ function paintSummary(root) {
   const booking = pendingBooking(root);
   host.innerHTML = renderSummaryBody(booking);
   const pay = root.querySelector("[data-calendar-booking-summary-pay]");
-  if (pay) pay.innerHTML = renderSummaryPay(booking);
+  if (pay) {
+    pay.innerHTML = renderBookingPayRow({
+      price: totalServicePrice(bookingServices(booking)),
+    });
+  }
 }
 
 function continueWithServices(root) {
   const services = selectedServices(root);
   if (!services.length) return;
-  mergePendingBooking(root, { services, service: services[0] });
-  paintSummary(root);
-  goToBookingPanel(root, "summary", { direction: "forward" });
+  mergePendingBooking(
+    root,
+    normalizeBookingForSave({ ...pendingBooking(root), services, service: services[0] }),
+  );
+  paintBookingTimePanel(root, pendingBooking(root));
+  goToBookingPanel(root, "time", { direction: "forward" });
 }
 
 function selectClient(root, client) {
-  mergePendingBooking(root, { client });
+  const nextClient = client.walkIn ? { name: "Walk in", email: "" } : client;
+  mergePendingBooking(root, { client: nextClient });
   paintServiceList(root);
   goToBookingPanel(root, "service", { direction: "forward" });
 }
@@ -485,7 +516,11 @@ export function bindCalendarClientPicker(root) {
       detail?.date ||
       root.querySelector("[data-sessions-navigator]")?.dataset.sessionsNavigatorValue ||
       "";
-    root.dataset.calendarPendingBooking = JSON.stringify({ ...(detail ?? {}), date });
+    if (detail?.fromCalendarAdd) root.dataset.calendarBookingFromAdd = "true";
+    else delete root.dataset.calendarBookingFromAdd;
+    root.dataset.calendarPendingBooking = JSON.stringify(
+      normalizeBookingForSave({ ...(detail ?? {}), date }),
+    );
     paintPickerList(root, "");
     paintServiceList(root);
     const search = root.querySelector("[data-calendar-client-picker-search]");
@@ -597,9 +632,22 @@ export function bindCalendarClientPicker(root) {
       return;
     }
 
-    if (event.target.closest("[data-calendar-booking-service-back]")) {
+    const bookingBack = event.target.closest("[data-calendar-booking-back]");
+    if (bookingBack) {
       event.preventDefault();
-      goToBookingPanel(root, "client", { direction: "back" });
+      const target = bookingBack.dataset.calendarBookingBackTo;
+      if (target === "close") {
+        setPickerOpen(root, false, { resetPending: true });
+        clearCalendarSlotSelection(root);
+        return;
+      }
+      if (target === "summary-prev") {
+        goToBookingPanel(root, summaryBackPanel(root), { direction: "back" });
+        return;
+      }
+      if (target) {
+        goToBookingPanel(root, target, { direction: "back" });
+      }
       return;
     }
 
@@ -609,18 +657,82 @@ export function bindCalendarClientPicker(root) {
       return;
     }
 
-    if (event.target.closest("[data-calendar-booking-summary-back]")) {
+    if (event.target.closest("[data-calendar-time-continue]")) {
       event.preventDefault();
-      goToBookingPanel(root, "service", { direction: "back" });
+      const booking = pendingBooking(root);
+      if (!booking.time) return;
+      mergePendingBooking(root, normalizeBookingForSave(booking));
+      paintSummary(root);
+      goToBookingPanel(root, "summary", { direction: "forward" });
       return;
+    }
+
+    const timeSlot = event.target.closest("[data-calendar-time-slot]");
+    if (timeSlot) {
+      event.preventDefault();
+      mergePendingBooking(root, {
+        time: timeSlot.textContent?.trim() || "",
+        hour: Number(timeSlot.dataset.calendarTimeHour),
+        minute: Number(timeSlot.dataset.calendarTimeMinute),
+      });
+      paintBookingTimePanel(root, pendingBooking(root));
+      return;
+    }
+
+    if (event.target.closest("[data-calendar-time-date]")) {
+      event.preventDefault();
+      const value = event.target.closest("[data-calendar-time-date]")?.dataset.calendarTimeDate;
+      if (!value) return;
+      mergePendingBooking(root, { date: value });
+      paintBookingTimePanel(root, pendingBooking(root));
+      return;
+    }
+
+    const monthShift = event.target.closest("[data-calendar-time-month]");
+    if (monthShift) {
+      event.preventDefault();
+      const booking = pendingBooking(root);
+      const delta = Number(monthShift.dataset.calendarTimeMonth) || 0;
+      mergePendingBooking(root, { date: shiftBookingMonth(booking.date, delta) });
+      paintBookingTimePanel(root, pendingBooking(root));
+      return;
+    }
+
+    if (event.target.closest("[data-calendar-time-staff-trigger]")) {
+      event.preventDefault();
+      const menu = event.target.closest("[data-calendar-time-staff-menu]");
+      const open = !menu?.classList.contains("is-open");
+      setBookingTimeStaffMenuOpen(root, open);
+      return;
+    }
+
+    const staffPick = event.target.closest("[data-calendar-time-staff-pick]");
+    if (staffPick) {
+      event.preventDefault();
+      mergePendingBooking(root, { staffName: staffPick.dataset.calendarTimeStaffPick });
+      setBookingTimeStaffMenuOpen(root, false);
+      paintBookingTimePanel(root, pendingBooking(root));
+      return;
+    }
+
+    if (!event.target.closest("[data-calendar-time-staff-menu]")) {
+      setBookingTimeStaffMenuOpen(root, false);
     }
 
     if (event.target.closest("[data-calendar-booking-book]")) {
       event.preventDefault();
-      const pending = pendingBooking(root);
+      const pending = normalizeBookingForSave(pendingBooking(root));
+      mergePendingBooking(root, pending);
       if (!pending.appointmentId) {
-        addAppointmentFromBooking(pending);
-        root.dispatchEvent(new CustomEvent("sessions:appointments-changed", { bubbles: true }));
+        const appointment = addAppointmentFromBooking(pending);
+        if (appointment) {
+          root.dispatchEvent(
+            new CustomEvent("sessions:appointments-changed", {
+              bubbles: true,
+              detail: { appointment },
+            }),
+          );
+        }
       }
       setPickerOpen(root, false, { resetPending: true });
       clearCalendarSlotSelection(root);
@@ -714,12 +826,21 @@ export function bindCalendarClientPicker(root) {
     }
     if (panel === "summary") {
       event.stopPropagation();
-      goToBookingPanel(root, "service", { direction: "back" });
+      goToBookingPanel(root, summaryBackPanel(root), { direction: "back" });
       return;
     }
     if (panel === "add-client") {
       event.stopPropagation();
       goToBookingPanel(root, "client", { direction: "back" });
+      return;
+    }
+    if (panel === "time") {
+      event.stopPropagation();
+      if (root.querySelector("[data-calendar-time-staff-menu].is-open")) {
+        setBookingTimeStaffMenuOpen(root, false);
+        return;
+      }
+      goToBookingPanel(root, "service", { direction: "back" });
       return;
     }
     if (panel === "service") {

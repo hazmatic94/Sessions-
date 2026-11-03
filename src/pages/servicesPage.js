@@ -13,6 +13,7 @@ import { renderSessionsServiceList, setupSessionsServiceLists } from "/ds/src/co
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+import { refreshMobileSheetMenus, setupMobileSheetMenus } from "/src/components/mobileSheet.js";
 import { durationMinutes, listStoredServices, saveServices } from "/src/data/services.js";
 
 const navOptions = {
@@ -141,6 +142,8 @@ export function mountServicesPage(root) {
   setupSessionsAddService(root);
   setupSessionsFilterBars(root);
   setupSessionsServiceLists(root);
+  setupMobileSheetMenus(root);
+  refreshMobileSheetMenus(root);
   root.addEventListener("input", (event) => {
     if (event.target.name !== "service-search") return;
     serviceQuery = event.target.value;

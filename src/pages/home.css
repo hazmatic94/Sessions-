@@ -71,6 +71,41 @@ body {
   }
 }
 
+.sessions-surface-drawer.is-sessions-inner-page.is-closing {
+  transform: translateX(100%);
+  pointer-events: none;
+}
+
+.sessions-surface-scrim.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@starting-style {
+  .sessions-surface-drawer.is-sessions-inner-page {
+    transform: translateX(100%);
+  }
+}
+
+@media (max-width: 768px) {
+  body.is-sessions-inner-page-open,
+  body.is-team-sheet-open {
+    overflow: hidden;
+  }
+
+  .sessions-surface-drawer.is-sessions-inner-page {
+    transform: translateX(0);
+    transition: transform var(--motion-medium) var(--ease-emphasized);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sessions-surface-drawer.is-sessions-inner-page,
+  .sessions-surface-scrim.is-closing {
+    transition: none;
+  }
+}
+
 .home-shell__rail {
   display: flex;
   flex-shrink: 0;
@@ -196,4 +231,56 @@ body {
   .home-shell__mobile .mobile-menu-panel {
     width: min(334px, calc(100% - 16px));
   }
+
+  /* Mobile bottom sheets: shared layout + close above panel (matches .sessions-close on modals) */
+  .sessions-mobile-sheet:not([hidden]) {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+  }
+
+  .sessions-mobile-sheet .sessions-menu-panel {
+    position: absolute;
+    top: auto;
+    right: var(--spacing-8);
+    bottom: 0;
+    left: var(--spacing-8);
+    width: auto;
+    height: auto;
+    min-width: 0;
+    max-height: calc(100dvh - var(--mobile-menu-height) - var(--button-height) - var(--spacing-16));
+    overflow: visible;
+    border-bottom: 0;
+    border-radius: var(--spacing-12) var(--spacing-12) 0 0;
+    padding: var(--spacing-16) var(--spacing-8) var(--spacing-48);
+    gap: var(--spacing-16);
+  }
+
+  .sessions-mobile-sheet .sessions-menu-panel > .sessions-mobile-sheet__close {
+    display: none;
+  }
+
+  .sessions-mobile-sheet .sessions-team-sheet .sessions-modal__close {
+    z-index: 2;
+  }
+
+  [data-sessions-team-actions].is-open > .sessions-button,
+  [data-sessions-service-actions].is-open > .sessions-button,
+  .sessions-client-card__menu-wrap.is-open > .sessions-button {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .sessions-mobile-sheet .sessions-team-sheet__scrim,
+  .sessions-mobile-sheet .sessions-service-sheet__scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: color-mix(in srgb, var(--black-900) 62%, transparent);
+    cursor: pointer;
+  }
+
 }

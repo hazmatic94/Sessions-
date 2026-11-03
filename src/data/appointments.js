@@ -1,5 +1,7 @@
 import { formatHourBookingLabel, resolveHourTime } from "/ds/src/components/patterns/hourTime.js";
+import { toNavigatorDateValue } from "/ds/src/components/patterns/navigator.js";
 import { durationMinutes, listServicesForBooking, totalServicePrice } from "/src/data/services.js";
+import { SHIFT_TEAM } from "/src/pages/shiftStore.js";
 
 const STORAGE_KEY = "sessions.appointments";
 
@@ -131,8 +133,22 @@ export function appointmentToPendingBooking(appointment) {
   };
 }
 
+export function normalizeBookingForSave(booking = {}) {
+  const staffName = String(booking.staffName || SHIFT_TEAM[0]?.name || "").trim();
+  const date = String(booking.date || toNavigatorDateValue(new Date())).trim();
+  const normalized = { ...booking, staffName, date };
+  const { hour, minute } = resolveBookingStart(normalized);
+  return {
+    ...normalized,
+    hour,
+    minute,
+    time: normalized.time || formatHourBookingLabel(hour, minute),
+  };
+}
+
 export function addAppointmentFromBooking(booking) {
-  const appointment = createAppointmentFromBooking(booking);
+  const normalized = normalizeBookingForSave(booking);
+  const appointment = createAppointmentFromBooking(normalized);
   if (!appointment.date || !appointment.staffName) return null;
   const rows = listAppointments();
   rows.push(appointment);

@@ -520,7 +520,13 @@ function bindCalendarLayout(root) {
   root.addEventListener("sessions:team-selection", () => {
     applySelectedStaff(root);
   });
-  root.addEventListener("sessions:appointments-changed", () => {
+  root.addEventListener("sessions:appointments-changed", (event) => {
+    const appointment = event.detail?.appointment;
+    if (appointment?.date) {
+      setCalendarDate(root, appointment.date);
+      scrollCalendarToBooking(root, appointment);
+      return;
+    }
     paintCalendarHours(root);
   });
   root.addEventListener("sessions:navigator-date", (event) => {
@@ -710,10 +716,15 @@ function syncMobileDate(root, date) {
 }
 
 function scrollCalendarToDate(root) {
+  scrollCalendarToBooking(root, { hour: new Date().getHours() });
+}
+
+function scrollCalendarToBooking(root, appointment) {
   const stage = root.querySelector(".calendar-stage");
   if (stage?.classList.contains("is-view-3day") || stage?.classList.contains("is-view-week")) return;
-  const hour = new Date().getHours();
-  const label = root.querySelector(`[data-sessions-hour-label][data-hour="${hour}"]`);
+  const hour = Number(appointment?.hour);
+  const safeHour = Number.isFinite(hour) ? hour : new Date().getHours();
+  const label = root.querySelector(`[data-sessions-hour-label][data-hour="${safeHour}"]`);
   const row = label?.closest(".calendar-hour");
   const scroller = root.querySelector(".home-shell__main");
   if (!row || !scroller) return;

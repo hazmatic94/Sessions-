@@ -1,5 +1,5 @@
 import { renderSessionsAvatar } from "/ds/src/components/avatar/avatar.js";
-import { renderPrimaryButton, renderSecondaryButton, renderSessionsButton } from "/ds/src/components/button/button.js";
+import { renderGhostButton, renderPrimaryButton, renderSecondaryButton, renderSessionsButton, renderSessionsCloseButton } from "/ds/src/components/button/button.js";
 import { renderSessionsChip } from "/ds/src/components/chip/chip.js";
 import { escapeHtml } from "/ds/src/utils.js";
 import {
@@ -13,9 +13,13 @@ import { renderSessionsMenuPanel } from "/ds/src/components/menu/panel.js";
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { renderSessionsFilterBar, setupSessionsFilterBars } from "/ds/src/components/patterns/filterBar.js";
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
+import { renderSessionsSurface } from "/ds/src/components/patterns/surface.js";
 import { renderSessionsTeamList, setupSessionsTeamLists } from "/ds/src/components/rows/teamMemberRow.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+import { refreshMobileSheetMenus, setupMobileSheetMenus } from "/src/components/mobileSheet.js";
+import { renderTeamMemberProfileDrawer, setupTeamMemberProfiles } from "/src/components/teamMemberProfile.js";
+import { setSessionsSurfaceDrawerOpen } from "/src/utils/surfaceDrawer.js";
 import { loadShiftWeek, shiftLabel, tintMemberAvatar, writeShiftDay } from "/src/pages/shiftStore.js";
 
 const navOptions = {
@@ -46,6 +50,32 @@ const TEAM = [
     avatarSrc: "/assets/demo/connor.jpg",
   },
 ];
+
+const TEAM_ROLE_OWNER = "Workspace Owner";
+
+function teamShiftActor() {
+  // ponytail: demo defaults to workspace owner; set localStorage "sessions.teamActor" to a member name to test No Access
+  try {
+    const name = localStorage.getItem("sessions.teamActor");
+    if (name) {
+      const match = TEAM.find((member) => member.name === name);
+      if (match) return match;
+    }
+  } catch {
+    // storage blocked
+  }
+  return TEAM.find((member) => member.role === TEAM_ROLE_OWNER) ?? TEAM[0];
+}
+
+function canEditMemberShifts(memberName) {
+  const actor = teamShiftActor();
+  if (actor.role === TEAM_ROLE_OWNER) return true;
+  return actor.name === memberName;
+}
+
+function shiftRowMemberName(node) {
+  return node?.closest("[data-shift-member]")?.dataset.shiftMember || "";
+}
 
 const TEAM_SORTS = [
   { value: "custom", label: "Custom order" },
@@ -107,30 +137,93 @@ function formatDay(date) {
   return `${weekday}, ${month} ${date.getDate()}`;
 }
 
-function shiftButton(block, index) {
-  if (block?.kind === "shift") {
-    return `<div class="team-shifts__cell" data-shift-day="${index}" data-shift-start="${block.start}" data-shift-end="${block.end}"><button class="team-shifts__shift" type="button" aria-haspopup="menu" aria-expanded="false">${shiftLabel(block)}</button></div>`;
-  }
-  if (block?.kind === "time-off") {
-    const times = block.start == null ? "" : ` data-shift-start="${block.start}" data-shift-end="${block.end}"`;
-    return `<div class="team-shifts__cell" data-shift-day="${index}"${times}><button class="team-shifts__shift team-shifts__shift--idle" type="button" aria-haspopup="menu" aria-expanded="false">${SHIFT_COPY["time-off"]}</button></div>`;
-  }
-  return `<div class="team-shifts__cell" data-shift-day="${index}"><button class="team-shifts__shift team-shifts__shift--idle" type="button" aria-haspopup="menu" aria-expanded="false">${SHIFT_COPY.closed}</button></div>`;
+function shiftControl(block, interactive = true) {
+  const control = (className, label) =>
+    interactive
+      ? `<button class="${className}" type="button" aria-haspopup="menu" aria-expanded="false">${label}</button>`
+      : `<span class="${className} team-shifts__shift--readonly" aria-disabled="true">${label}</span>`;
+
+  if (block?.kind === "shift") return control("team-shifts__shift", shiftLabel(block));
+  if (block?.kind === "time-off") return control("team-shifts__shift team-shifts__shift--idle", SHIFT_COPY["time-off"]);
+  return control("team-shifts__shift team-shifts__shift--idle", SHIFT_COPY.closed);
 }
 
-function renderShiftCell(block, index) {
-  return shiftButton(block, index);
+function renderShiftCell(block, index, interactive, date) {
+  const dayMeta = date
+    ? `<div class="team-shifts__day-meta"><span class="team-shifts__day-label">${escapeHtml(formatDay(date))}</span><span class="team-shifts__day-hours">${escapeHtml(DAY_HOURS[index] || "")}</span></div>`
+    : "";
+  let attrs = ` data-shift-day="${index}"`;
+  if (block?.kind === "shift") attrs += ` data-shift-start="${block.start}" data-shift-end="${block.end}"`;
+  if (block?.kind === "time-off" && block.start != null) attrs += ` data-shift-start="${block.start}" data-shift-end="${block.end}"`;
+  return `<div class="team-shifts__cell"${attrs}>${dayMeta}${shiftControl(block, interactive)}</div>`;
 }
 
-function renderShiftRow(member) {
+function renderShiftRow(member, dates) {
+  const editable = canEditMemberShifts(member.name);
   const avatar = renderSessionsAvatar({
     src: member.avatarSrc,
     name: member.name,
     initial: member.avatarInitial || member.name,
     size: "small",
   });
-  const shifts = (loadShiftWeek()[member.name] || []).map((block, index) => renderShiftCell(block, index)).join("");
-  return `<div class="team-shifts__row" data-shift-member="${escapeHtml(member.name)}"><div class="sessions-list__person team-shifts__member"><div class="team-shifts__member-card">${avatar}<div class="team-shifts__who"><p class="sessions-team-list__name">${escapeHtml(member.name)}</p><p class="team-shifts__total">${MEMBER_HOURS[member.name] || ""}</p></div><button class="team-shifts__edit" type="button" aria-label="Edit shifts"><img src="/assets/IconEdit.svg" width="20" height="20" alt="" /></button></div></div>${shifts}</div>`;
+  const shifts = (loadShiftWeek()[member.name] || [])
+    .map((block, index) => renderShiftCell(block, index, editable, dates[index]))
+    .join("");
+  const edit = editable
+    ? `<button class="team-shifts__edit" type="button" aria-label="Edit shifts"><img src="/assets/IconEdit.svg" width="20" height="20" alt="" /></button>`
+    : "";
+  const readonlyAttr = editable ? "" : ' data-shifts-readonly="true"';
+  return `<div class="team-shifts__row" data-shift-member="${escapeHtml(member.name)}"${readonlyAttr}><div class="sessions-list__person team-shifts__member"><div class="team-shifts__member-card">${avatar}<div class="team-shifts__who"><p class="sessions-team-list__name">${escapeHtml(member.name)}</p><p class="team-shifts__total">${MEMBER_HOURS[member.name] || ""}</p></div>${edit}</div></div><div class="team-shifts__mobile-stack"><div class="team-shifts__days">${shifts}</div></div></div>`;
+}
+
+function renderShiftMobileItem(member, dates) {
+  const editable = canEditMemberShifts(member.name);
+  const avatar = renderSessionsAvatar({
+    src: member.avatarSrc,
+    name: member.name,
+    initial: member.avatarInitial || member.name,
+    size: "small",
+  });
+  const shifts = (loadShiftWeek()[member.name] || [])
+    .map((block, index) => renderShiftCell(block, index, editable, dates[index]))
+    .join("");
+  const readonlyAttr = editable ? "" : ' data-shifts-readonly="true"';
+  return `<div class="team-shifts-mobile__item"${readonlyAttr} data-shift-member="${escapeHtml(member.name)}"><button type="button" class="team-shifts-mobile__trigger sessions-list__row" aria-expanded="false"><span class="sessions-list__person team-shifts-mobile__person">${avatar}<span class="team-shifts-mobile__who"><span class="sessions-team-list__name">${escapeHtml(member.name)}</span><span class="team-shifts__total">${MEMBER_HOURS[member.name] || ""}</span></span></span><span class="team-shifts-mobile__toggle sessions-button sessions-button--secondary" aria-hidden="true"></span></button><div class="team-shifts-mobile__panel" hidden><div class="team-shifts-mobile__panel-inner"><div class="team-shifts__days">${shifts}</div></div></div></div>`;
+}
+
+function shiftAccordionPanel(item) {
+  return item?.querySelector(".team-shifts-mobile__panel");
+}
+
+function closeShiftAccordionItem(item, animate = true) {
+  if (!item?.classList.contains("is-open")) return;
+  const panel = shiftAccordionPanel(item);
+  item.classList.remove("is-open");
+  item.querySelector(".team-shifts-mobile__trigger")?.setAttribute("aria-expanded", "false");
+  if (!panel) return;
+  if (!animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    panel.hidden = true;
+    return;
+  }
+  const done = (event) => {
+    if (event.target !== panel || event.propertyName !== "grid-template-rows") return;
+    panel.removeEventListener("transitionend", done);
+    if (!item.classList.contains("is-open")) panel.hidden = true;
+  };
+  panel.addEventListener("transitionend", done);
+}
+
+function openShiftAccordionItem(item) {
+  const panel = shiftAccordionPanel(item);
+  if (!panel) return;
+  panel.hidden = false;
+  void panel.offsetHeight;
+  item.classList.add("is-open");
+  item.querySelector(".team-shifts-mobile__trigger")?.setAttribute("aria-expanded", "true");
+}
+
+function renderShiftMobileList(days) {
+  return `<div class="team-shifts-mobile sessions-list">${TEAM.map((member) => renderShiftMobileItem(member, days)).join("")}</div>`;
 }
 
 function renderShiftMenu() {
@@ -142,7 +235,7 @@ function renderShiftMenu() {
       attributes: { "data-shift-action": item.value },
     }),
   ).join("");
-  const sheet = `<div class="sessions-team-sheet team-shifts__sheet"><button class="sessions-team-sheet__close" type="button" aria-label="Close"><img src="/assets/IconClose.svg" width="24" height="24" alt="" /></button><div class="team-shifts__sheet-avatar"></div><p class="sessions-team-sheet__name"></p><p class="sessions-team-sheet__date"></p></div>`;
+  const sheet = `<div class="sessions-team-sheet team-shifts__sheet">${renderSessionsCloseButton({ className: "sessions-team-sheet__close" })}<div class="team-shifts__sheet-avatar"></div><p class="sessions-team-sheet__name"></p><p class="sessions-team-sheet__date"></p></div>`;
   return `<div class="team-shifts__menu" hidden><button class="sessions-team-sheet__scrim" type="button" aria-label="Close"></button>${renderSessionsMenuPanel({ children: `${sheet}${items}` })}</div>`;
 }
 
@@ -205,7 +298,32 @@ function renderShiftEdit() {
     '<div class="sessions-modal__actions">',
     `<div class="sessions-modal__actions">${renderSessionsButton({ variant: "secondary", icon: "trash", ariaLabel: "Delete this shift", className: "team-shift-edit__delete" })}`,
   );
-  return `<div class="team-shift-edit" hidden><button class="team-shift-edit__scrim" type="button" aria-label="Close"></button>${modal}</div>`;
+  const surfaceClose = renderSessionsButton({
+    variant: "secondary",
+    icon: "close",
+    ariaLabel: "Close shift editor",
+    className: "sessions-surface-close",
+  }).replace("<button ", '<button data-team-shift-edit-close ');
+  const back = renderGhostButton({
+    label: "Back",
+    icon: "chevron-left",
+    className: "sessions-client-edit__back",
+  }).replace("<button ", '<button data-team-shift-edit-back ');
+  const page = `<div class="team-shift-edit__page sessions-surface-step"><div class="team-shift-edit__nav sessions-client-edit__nav">${back}</div>${modal}</div>`;
+
+  return `<div class="sessions-surface-scrim team-shift-edit__scrim" data-team-shift-edit-scrim hidden></div><div class="team-shift-edit sessions-surface-drawer is-sessions-inner-page" data-team-shift-edit role="dialog" aria-modal="true" aria-labelledby="sessions-modal-title-shift" hidden>${surfaceClose}${renderSessionsSurface({ className: "team-shift-edit__surface", children: page })}</div>`;
+}
+
+function shiftEditNodes() {
+  return {
+    host: document.querySelector("[data-team-shift-edit]"),
+    scrim: document.querySelector("[data-team-shift-edit-scrim]"),
+  };
+}
+
+function setShiftEditOpen(open) {
+  const { host, scrim } = shiftEditNodes();
+  return setSessionsSurfaceDrawerOpen({ drawer: host, scrim, open, hideScrimOnMobile: true });
 }
 
 function renderShifts() {
@@ -214,7 +332,7 @@ function renderShifts() {
     .map((date, index) => `<span class="team-shifts__day">${formatDay(date)}<span class="team-shifts__hours">${DAY_HOURS[index]}</span></span>`)
     .join("");
 
-  return `<div class="team-shifts" data-team-panel="shifts" hidden><div class="team-shifts__scroll"><div class="team-shifts__grid" style="--team-shift-days: ${days.length}"><div class="team-shifts__row team-shifts__head"><span></span>${headings}</div><div class="team-shifts__body">${TEAM.map((member) => renderShiftRow(member)).join("")}</div></div></div>${renderShiftMenu()}</div>`;
+  return `<div class="team-shifts" data-team-panel="shifts" hidden><div class="team-shifts__scroll team-shifts__scroll--desktop"><div class="team-shifts__grid" style="--team-shift-days: ${days.length}"><div class="team-shifts__row team-shifts__head"><span></span>${headings}</div><div class="team-shifts__body">${TEAM.map((member) => renderShiftRow(member, days)).join("")}</div></div></div>${renderShiftMobileList(days)}${renderShiftMenu()}</div>`;
 }
 
 function renderShiftToast() {
@@ -242,6 +360,7 @@ export function renderTeamPage() {
       ${renderSessionsFooter()}
       ${renderShiftEdit()}
       ${renderShiftToast()}
+      ${renderTeamMemberProfileDrawer()}
     </div>
   `;
 }
@@ -257,10 +376,22 @@ export function mountTeamPage(root) {
   bindMobileMenu(root);
   linkPrimaryNav(root, { selected: "Team" });
   setupSessionsTeamLists(root);
+  setupTeamMemberProfiles(root, {
+    members: TEAM,
+    onUpdated: (member) => {
+      root.querySelectorAll(".sessions-team-list__row").forEach((row) => {
+        if (row.querySelector(".sessions-team-list__name")?.textContent?.trim() !== member.name) return;
+        row.querySelectorAll(".sessions-avatar").forEach((avatar) => tintMemberAvatar(avatar, member.name));
+      });
+    },
+  });
+  setupMobileSheetMenus(root);
+  refreshMobileSheetMenus(root);
   setupSessionsFilterBars(root);
   bindTeamSort(root);
   bindTeamView(root);
   bindShiftMenu(root);
+  bindShiftAccordion(root);
   bindShiftToast(root);
   paintTeamAvatars(root);
 }
@@ -324,9 +455,14 @@ function bindTeamView(root) {
     const today = new Date();
     today.setHours(12, 0, 0, 0);
     const index = weekDates().findIndex((date) => date.toDateString() === today.toDateString());
-    const cell = page.querySelector(`[data-shift-member="${CSS.escape(name || "")}"] [data-shift-day="${index}"]`);
+    const cell = findShiftCell(root, name || "", index);
     showTeamView(page, "shifts");
-    if (cell) openShiftEdit(cell, "time-off");
+    if (cell && canEditMemberShifts(name || "")) {
+      root.querySelectorAll(".team-shifts-mobile__item.is-open").forEach((other) => closeShiftAccordionItem(other));
+      const mobileItem = cell.closest(".team-shifts-mobile__item");
+      if (mobileItem) openShiftAccordionItem(mobileItem);
+      openShiftEdit(cell, "time-off");
+    }
   });
 }
 
@@ -351,11 +487,38 @@ function bindShiftToast(root) {
   root.querySelector(".team-toast__close")?.addEventListener("click", hideShiftToast);
 }
 
+function findShiftCell(root, name, dayIndex) {
+  const key = `[data-shift-member="${CSS.escape(name)}"] [data-shift-day="${CSS.escape(String(dayIndex))}"]`;
+  if (window.matchMedia("(max-width: 768px)").matches) {
+    return root.querySelector(`.team-shifts-mobile ${key}`);
+  }
+  return root.querySelector(`.team-shifts__scroll--desktop ${key}`);
+}
+
+function bindShiftAccordion(root) {
+  root.addEventListener("click", (event) => {
+    const trigger = event.target.closest(".team-shifts-mobile__trigger");
+    if (!trigger || !root.contains(trigger)) return;
+    event.preventDefault();
+    const item = trigger.closest(".team-shifts-mobile__item");
+    const panel = item?.querySelector(".team-shifts-mobile__panel");
+    if (!item || !panel) return;
+    const open = !item.classList.contains("is-open");
+    root.querySelectorAll(".team-shifts-mobile__item.is-open").forEach((other) => {
+      if (other === item) return;
+      closeShiftAccordionItem(other);
+    });
+    if (open) openShiftAccordionItem(item);
+    else closeShiftAccordionItem(item);
+  });
+}
+
 function bindShiftMenu(root) {
   const page = root.querySelector(".team-page");
   page.addEventListener("click", (event) => {
     const cell = event.target.closest(".team-shifts__cell");
     if (cell) {
+      if (!canEditMemberShifts(shiftRowMemberName(cell))) return;
       event.preventDefault();
       const menu = page.querySelector(".team-shifts__menu");
       if (cell === shiftMenuCell && menu && !menu.hidden && !menu.classList.contains("is-closing")) {
@@ -365,7 +528,7 @@ function bindShiftMenu(root) {
       openShiftMenu(cell);
       return;
     }
-    if (event.target.closest(".sessions-team-sheet__close, .team-shifts__menu .sessions-team-sheet__scrim")) {
+    if (event.target.closest(".sessions-team-sheet__close, .sessions-modal__close, .team-shifts__menu .sessions-team-sheet__scrim")) {
       event.preventDefault();
       closeShiftMenu(page);
       return;
@@ -385,7 +548,7 @@ function bindShiftMenu(root) {
   });
   root.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
-    const edit = root.querySelector(".team-shift-edit");
+    const edit = root.querySelector("[data-team-shift-edit]");
     if (edit && !edit.hidden) {
       const openList = edit.querySelector(".team-shift-edit__time-list:not([hidden])");
       if (openList) closeTimeLists(edit);
@@ -469,6 +632,7 @@ function placeShiftMenu(menu, cell) {
 }
 
 function openShiftMenu(cell) {
+  if (!canEditMemberShifts(shiftRowMemberName(cell))) return;
   const menu = document.querySelector(".team-shifts__menu");
   const row = cell.closest("[data-shift-member]");
   const member = TEAM.find((person) => person.name === row?.dataset.shiftMember);
@@ -522,7 +686,10 @@ function setShiftTime(host, name, minutes) {
 }
 
 function openShiftEdit(cell, mode = "shift") {
-  const host = document.querySelector(".team-shift-edit");
+  if (!canEditMemberShifts(shiftRowMemberName(cell))) return;
+  const { host } = shiftEditNodes();
+  if (!host) return;
+  closeShiftMenu();
   const timeOff = mode === "time-off";
   const name = cell.closest("[data-shift-member]")?.dataset.shiftMember || "";
   const date = weekDates()[Number(cell.dataset.shiftDay)];
@@ -539,29 +706,33 @@ function openShiftEdit(cell, mode = "shift") {
   setShiftTime(host, "end", end);
   paintShiftDuration(host);
   shiftEditCell = cell;
-  host.hidden = false;
+  setShiftEditOpen(true);
 }
 
 function closeShiftEdit() {
-  const host = document.querySelector(".team-shift-edit");
+  const { host } = shiftEditNodes();
   if (!host || host.hidden) return;
   closeTimeLists(host);
-  host.hidden = true;
+  setShiftEditOpen(false);
   shiftEditCell = null;
 }
 
 function commitShift(cell, block) {
   const name = cell.closest("[data-shift-member]")?.dataset.shiftMember;
-  if (!name) return;
-  writeShiftDay(name, Number(cell.dataset.shiftDay), block);
-  const fresh = document.createElement("div");
-  fresh.innerHTML = shiftButton(block, Number(cell.dataset.shiftDay));
-  cell.replaceWith(fresh.firstElementChild);
+  if (!name || !canEditMemberShifts(name)) return;
+  const dayIndex = Number(cell.dataset.shiftDay);
+  writeShiftDay(name, dayIndex, block);
+  const html = renderShiftCell(block, dayIndex, canEditMemberShifts(name), weekDates()[dayIndex]);
+  document.querySelectorAll(`[data-shift-member="${CSS.escape(name)}"] [data-shift-day="${CSS.escape(String(dayIndex))}"]`).forEach((target) => {
+    const fresh = document.createElement("div");
+    fresh.innerHTML = html;
+    target.replaceWith(fresh.firstElementChild);
+  });
   showShiftToast();
 }
 
 function applyShiftEdit(kind) {
-  const host = document.querySelector(".team-shift-edit");
+  const host = document.querySelector("[data-team-shift-edit]");
   if (shiftEditCell && kind === "save") {
     const start = Number(host.querySelector('[name="start"]').value);
     const end = Number(host.querySelector('[name="end"]').value);
@@ -577,7 +748,8 @@ function applyShiftEdit(kind) {
 }
 
 function bindShiftEdit(root) {
-  const host = root.querySelector(".team-shift-edit");
+  const host = root.querySelector("[data-team-shift-edit]");
+  if (!host) return;
   host.addEventListener("click", (event) => {
     const option = event.target.closest(".team-shift-edit__time-option");
     if (option) {
@@ -600,7 +772,7 @@ function bindShiftEdit(root) {
       }
       return;
     }
-    if (event.target.closest(".team-shift-edit__scrim, .sessions-modal__close, .sessions-modal__actions .sessions-button--secondary")) {
+    if (event.target.closest("[data-team-shift-edit-back], [data-team-shift-edit-scrim], [data-team-shift-edit-close], .sessions-modal__close, .sessions-modal__actions .sessions-button--secondary")) {
       event.preventDefault();
       closeShiftEdit();
       return;
