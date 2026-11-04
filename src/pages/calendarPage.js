@@ -5,6 +5,7 @@ import {
   setupSessionsProfileMenu,
 } from "/ds/src/components/navigation/index.js";
 import { applySessionsCalendarSelection, renderSessionsCalendar } from "/ds/src/components/calendar/calendar.js";
+import { renderSessionsAvatar } from "/ds/src/components/avatar/avatar.js";
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { setupSessionsCalendars } from "/ds/src/components/calendar/interactions.js";
 import {
@@ -141,6 +142,87 @@ function syncCalendarHeaderLayout(root) {
   root.querySelector(".sessions-calendar-header-row__layout--mobile")?.toggleAttribute("hidden", !mobile);
 }
 
+function formatSlotSheetDate(dateValue) {
+  const date = parseNavigatorDate(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = date.getDate();
+  const teen = day % 100;
+  const suffix = teen >= 11 && teen <= 13 ? "th" : { 1: "st", 2: "nd", 3: "rd" }[day % 10] || "th";
+  const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  return `${weekday} ${month} ${day}${suffix}`;
+}
+
+function slotMenuSheet(root) {
+  return root.querySelector("[data-sessions-slot-menu-sheet]");
+}
+
+function slotMenuStaffFromSelection(root) {
+  const selected = root.querySelector(".sessions-hour-column__slot.is-selected");
+  return selected?.closest("[data-sessions-hour-column]")?.dataset.calendarStaff?.trim() ?? "";
+}
+
+function ensureSlotMenuContextMarkup(root) {
+  const panel = slotMenuSheet(root)?.querySelector(".sessions-menu-panel");
+  if (!panel || panel.querySelector("[data-sessions-slot-menu-context]")) return;
+  panel.insertAdjacentHTML(
+    "afterbegin",
+    `<div class="sessions-team-sheet sessions-slot-menu__sheet" data-sessions-slot-menu-context hidden><div data-sessions-slot-menu-avatar></div><p class="sessions-team-sheet__name" data-sessions-slot-menu-name></p><p class="sessions-team-sheet__date" data-sessions-slot-menu-date></p></div>`,
+  );
+}
+
+function paintSlotMenuHeader(root, { staffName = "", date = "", fromAdd = false } = {}) {
+  ensureSlotMenuContextMarkup(root);
+  const sheet = slotMenuSheet(root);
+  const context = sheet?.querySelector("[data-sessions-slot-menu-context]");
+  if (!context) return;
+  const mobile = window.matchMedia("(max-width: 768px)").matches;
+  const name = staffName || slotMenuStaffFromSelection(root);
+  const dateValue = date || calendarStartDate(root);
+  if (!mobile || fromAdd || !name) {
+    context.hidden = true;
+    return;
+  }
+  const member = STAFF.find((person) => person.name === name);
+  const avatarHost = sheet.querySelector("[data-sessions-slot-menu-avatar]");
+  if (avatarHost) {
+    avatarHost.innerHTML = renderSessionsAvatar({
+      src: member?.avatarSrc,
+      name,
+      initial: name,
+      size: "medium",
+    });
+    tintMemberAvatar(avatarHost.querySelector(".sessions-avatar"), name);
+  }
+  const nameEl = sheet.querySelector("[data-sessions-slot-menu-name]");
+  const dateEl = sheet.querySelector("[data-sessions-slot-menu-date]");
+  if (nameEl) nameEl.textContent = name;
+  if (dateEl) dateEl.textContent = formatSlotSheetDate(dateValue);
+  context.hidden = false;
+}
+
+function bindSlotMenuHeader(root) {
+  root.addEventListener("sessions:slot-menu-open", (event) => {
+    paintSlotMenuHeader(root, event.detail);
+  });
+  root.addEventListener(
+    "click",
+    (event) => {
+      const slot = event.target.closest(".sessions-hour-column__slot");
+      if (!slot || slot.dataset.outsideHours === "true") return;
+      if (!window.matchMedia("(max-width: 768px)").matches) return;
+      window.requestAnimationFrame(() => {
+        paintSlotMenuHeader(root, {
+          staffName: slot.closest("[data-sessions-hour-column]")?.dataset.calendarStaff ?? "",
+          date: calendarStartDate(root),
+          fromAdd: false,
+        });
+      });
+    },
+    true,
+  );
+}
+
 export function mountCalendarPage(root) {
   root.innerHTML = renderCalendarPage();
   root.querySelector("#top-nav").innerHTML = renderTopNav(navOptions);
@@ -170,7 +252,9 @@ export function mountCalendarPage(root) {
   linkPrimaryNav(root, { selected: "Calendar" });
   setupSessionsStaffHeaders();
   setupSessionsTeamMenus(root);
+  root.querySelector("[data-sessions-slot-menu-root]")?.remove();
   setupSessionsSlotMenus(root);
+  bindSlotMenuHeader(root);
   bindCalendarLayout(root);
   bindMobileDateSheet(root);
   bindCalendarClientPicker(root);
@@ -368,7 +452,7 @@ function renderCalendarDayMenu() {
 }
 
 function renderCalendarStaffMenu() {
-  return `<div class="calendar-staff-menu" data-calendar-staff-menu hidden><div class="sessions-menu-panel"><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="day"><img src="/assets/IconDay.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">Day view</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="3day"><img src="/assets/Icon3Day.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">3 day view</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="week"><img src="/assets/IconWeek.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">Week view</span></button><hr class="sessions-menu-panel__divider" aria-hidden="true"><p class="calendar-staff-menu__heading">Actions</p><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="appointment"><span class="sessions-menu-item__label">Add appointment</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="blocked"><span class="sessions-menu-item__label">Add blocked time</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="time-off"><span class="sessions-menu-item__label">Add time off</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="member"><span class="sessions-menu-item__label">View team member</span></button></div></div>`;
+  return `<div class="calendar-staff-menu" data-calendar-staff-menu hidden><div class="sessions-menu-panel"><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="day"><img src="/assets/IconDay.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">Day view</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="3day"><img src="/assets/Icon3Day.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">3 day view</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="week"><img src="/assets/IconWeek.svg" width="20" height="20" alt=""><span class="sessions-menu-item__label">Week view</span></button><hr class="sessions-menu-panel__divider" aria-hidden="true"><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="appointment"><span class="sessions-menu-item__label">Add appointment</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="blocked"><span class="sessions-menu-item__label">Add blocked time</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="time-off"><span class="sessions-menu-item__label">Add time off</span></button><button class="sessions-menu-item" type="button" data-calendar-staff-menu-action="member"><span class="sessions-menu-item__label">View team member</span></button></div></div>`;
 }
 
 function closeDayMenu(root) {

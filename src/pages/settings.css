@@ -1,28 +1,76 @@
 .settings-page {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-24);
+  gap: var(--spacing-32);
 }
 
 .settings-page > .page-title {
-  margin-bottom: calc(42px - var(--spacing-24));
+  margin-bottom: calc(42px - var(--spacing-32));
 }
 
-.settings-account__row,
-.settings-account__danger {
+.settings-card {
+  overflow: hidden;
+  box-sizing: border-box;
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--spacing-12);
+  background: var(--color-surface-base);
+}
+
+.settings-card__body {
+  padding: 0;
+}
+
+.settings-card__title {
+  margin: 0;
+  padding: var(--spacing-24) var(--spacing-24) 0;
+}
+
+.settings-card .sessions-page-header__title {
+  font-family: var(--font);
+  font-size: var(--text-body-big-medium);
+  font-weight: var(--text-body-big-medium-weight);
+  line-height: var(--text-body-line-height);
+  letter-spacing: var(--text-body-big-letter-spacing);
+}
+
+.settings-card__row {
+  position: relative;
+}
+
+.settings-card__row-inner {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--spacing-16);
-  border-bottom: var(--border-width-default) solid var(--color-border-subtle);
+  box-sizing: border-box;
+  padding: var(--spacing-24);
 }
 
-.settings-account__row {
-  min-height: 72px;
-  padding-block: var(--spacing-16);
+.settings-card__row + .settings-card__row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: var(--spacing-24);
+  left: var(--spacing-24);
+  border-top: var(--border-width-default) solid var(--color-border-subtle);
 }
 
-.settings-account__label,
-.settings-account__danger-body {
+.settings-card__body > .settings-card__row:last-child .settings-card__row-inner {
+  padding-bottom: var(--spacing-24);
+}
+
+.settings-card__main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-width: 0;
+}
+
+.settings-card__label,
+.settings-card__copy {
+  margin: 0;
   color: var(--black-50);
   font-family: var(--font);
   font-size: var(--text-body-b1);
@@ -31,12 +79,10 @@
   letter-spacing: var(--text-body-b1-letter-spacing);
 }
 
-.settings-account__value {
-  display: flex;
+.settings-card__value {
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--spacing-8);
-  margin-left: auto;
   min-width: 0;
   color: var(--joker-white-50);
   font-family: var(--font);
@@ -44,7 +90,28 @@
   font-weight: var(--text-body-b1-weight);
   line-height: var(--text-body-b1-line-height);
   letter-spacing: var(--text-body-b1-letter-spacing);
-  text-align: right;
+}
+
+.settings-card__copy strong {
+  color: var(--joker-white-50);
+  font-weight: var(--text-body-b1-medium-weight);
+}
+
+.settings-card__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-4) var(--spacing-8);
+  border-radius: var(--spacing-4);
+  background: color-mix(in srgb, var(--joker-green-400) 18%, transparent);
+  color: var(--joker-green-400);
+  font-family: var(--font);
+  font-size: var(--text-body-12);
+  font-weight: var(--text-body-weight);
+  line-height: var(--text-body-line-height);
+}
+
+.settings-card__row-inner > .sessions-button--secondary {
+  flex: none;
 }
 
 .settings-account__reveal {
@@ -60,17 +127,8 @@
   color: var(--joker-white-50);
 }
 
-.settings-account__danger {
-  justify-content: space-between;
-  padding-block: var(--spacing-24);
-}
-
-.settings-account__danger-title,
-.settings-account__danger-body {
+.settings-card__danger-title {
   margin: 0;
-}
-
-.settings-account__danger-title {
   color: var(--joker-white-50);
   font-family: var(--font);
   font-size: var(--text-body-b1);
@@ -79,30 +137,29 @@
   letter-spacing: var(--text-body-b1-letter-spacing);
 }
 
-.settings-account__danger-body {
-  margin-top: var(--spacing-4);
+.settings-card__danger-body {
+  margin: var(--spacing-4) 0 0;
+  color: var(--black-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b1);
+  font-weight: var(--text-body-b1-weight);
+  line-height: var(--text-body-b1-line-height);
+  letter-spacing: var(--text-body-b1-letter-spacing);
 }
 
-.settings-account__delete.sessions-button--primary {
-  /* same width as a modal action button: (452 modal − borders − padding − gap) / 2 */
-  flex: none;
-  width: calc((452px - var(--border-width-default) * 2 - var(--spacing-32) * 2 - var(--spacing-24)) / 2);
-  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
-  background: var(--joker-red-700);
+.settings-card__delete.sessions-button--secondary {
+  color: var(--joker-red-400);
+  border-color: color-mix(in srgb, var(--joker-red-600) 55%, var(--color-border-default));
+  background: transparent;
 }
 
-.settings-account__delete.sessions-button--primary:hover:not(:disabled):not(.is-loading) {
-  border-color: color-mix(in srgb, var(--joker-red-600) 62%, white);
-  background: color-mix(in srgb, var(--joker-red-700) 94%, white);
+.settings-card__delete.sessions-button--secondary:hover:not(:disabled):not(.is-loading) {
+  color: var(--joker-red-400);
+  border-color: color-mix(in srgb, var(--joker-red-600) 72%, white);
+  background: color-mix(in srgb, var(--joker-red-700) 16%, transparent);
 }
 
-.settings-account__delete.sessions-button--primary:active:not(:disabled):not(.is-loading) {
-  border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
-  background: var(--joker-red-800);
-}
-
-.settings-delete,
-.settings-edit {
+.settings-delete {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -111,13 +168,11 @@
   padding: var(--spacing-24);
 }
 
-.settings-delete[hidden],
-.settings-edit[hidden] {
+.settings-delete[hidden] {
   display: none;
 }
 
-.settings-delete__scrim,
-.settings-edit__scrim {
+.settings-delete__scrim {
   position: absolute;
   inset: 0;
   margin: 0;
@@ -128,19 +183,47 @@
   animation: sessions-modal-scrim-in var(--motion-fast) var(--ease-out);
 }
 
-.settings-delete .sessions-modal,
-.settings-edit .sessions-modal {
+.settings-delete .sessions-modal {
   z-index: 1;
 }
 
-.settings-edit .sessions-modal__copy {
-  padding-right: 0;
+[data-sessions-settings-edit].sessions-surface-drawer {
+  z-index: 60;
 }
 
-.settings-edit .sessions-input {
+[data-sessions-settings-edit-scrim].sessions-surface-scrim {
+  z-index: 55;
+}
+
+[data-sessions-settings-edit] .sessions-surface {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+[data-sessions-settings-edit] .sessions-notifications.sessions-surface-step {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+[data-sessions-settings-edit] .sessions-add-client__actions {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+[data-sessions-settings-edit] .settings-edit__names {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+}
+
+[data-sessions-settings-edit] .sessions-add-client__form .sessions-input {
   width: 100%;
   max-width: none;
-  margin-top: var(--spacing-16);
+}
+
+[data-sessions-settings-edit] .sessions-add-client__form .sessions-input__control {
+  width: 100%;
 }
 
 .settings-delete .sessions-button--primary {
@@ -156,4 +239,60 @@
 .settings-delete .sessions-button--primary:active:not(:disabled):not(.is-loading) {
   border-color: color-mix(in srgb, var(--joker-red-600) 88%, var(--joker-red-700));
   background: var(--joker-red-800);
+}
+
+@media (max-width: 768px) {
+  .settings-page > .page-title {
+    margin-bottom: calc(32px - var(--spacing-32));
+  }
+
+  [data-sessions-settings-edit].sessions-surface-drawer {
+    top: var(--mobile-menu-height);
+    left: 0;
+    gap: 0;
+    width: 100%;
+    height: calc(100dvh - var(--mobile-menu-height));
+    background: var(--black-900);
+    transform: none;
+  }
+
+  [data-sessions-settings-edit] > .sessions-surface-close,
+  [data-sessions-settings-edit-scrim].sessions-surface-scrim {
+    display: none;
+  }
+
+  [data-sessions-settings-edit] .sessions-surface {
+    width: 100%;
+    max-width: none;
+    min-height: 100%;
+    overflow: hidden;
+    border-left: 0;
+    background: var(--black-900);
+  }
+
+  [data-sessions-settings-edit] .sessions-notifications {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 32px 24px 0;
+  }
+
+  [data-sessions-settings-edit] .sessions-add-client__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  [data-sessions-settings-edit] .sessions-add-client__actions {
+    padding: var(--spacing-32) 24px 32px;
+  }
+
+  .settings-card__row-inner {
+    flex-wrap: wrap;
+  }
+
+  .settings-card__row-inner > .sessions-button--secondary {
+    width: 100%;
+  }
 }
