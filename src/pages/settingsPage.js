@@ -13,20 +13,17 @@ import { renderSessionsSurface } from "/ds/src/components/patterns/surface.js";
 import { escapeHtml } from "/ds/src/utils.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+import {
+  loadAccount,
+  requestEmailChange,
+  resendEmailChange,
+  saveAccount,
+} from "/src/data/account.js";
 import { setSessionsSurfaceDrawerOpen } from "/src/utils/surfaceDrawer.js";
 
 const navOptions = {
   href: "/",
   ariaLabel: "Sessions home",
-};
-
-const ACCOUNT_KEY = "sessions.account";
-
-const DEFAULT_ACCOUNT = {
-  name: "Larry June",
-  email: "goodjoblarry@gmail.com",
-  phone: "+61 0461455500",
-  password: "larryjune",
 };
 
 const FIELDS = [
@@ -38,31 +35,20 @@ const FIELDS = [
     drawerTitle: "Change your name",
     drawerBody: "Edit and manage the content of your online profile.",
   },
-  { key: "email", label: "Email", type: "email", body: "Update the email on your account." },
+  {
+    key: "email",
+    label: "Email",
+    type: "email",
+    body: "Update the email address associated with your account.",
+    drawerTitle: "Change your email address",
+    drawerBody: "Update the email address associated with your account.",
+  },
   { key: "phone", label: "Phone", type: "tel", body: "Update the phone number on your account." },
   { key: "password", label: "Password", type: "password", body: "Update the password on your account." },
 ];
 
 const EYE = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const EYE_OFF = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-1.2"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a18.5 18.5 0 0 1-3.2 4.2M6.1 6.1C3.7 7.8 2 12 2 12a18.7 18.7 0 0 0 6.2 5.6 11 11 0 0 0 3.7 1.4"/></svg>`;
-
-function loadAccount() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "");
-    if (!parsed || typeof parsed !== "object") return { ...DEFAULT_ACCOUNT };
-    return { ...DEFAULT_ACCOUNT, ...parsed };
-  } catch {
-    return { ...DEFAULT_ACCOUNT };
-  }
-}
-
-function writeAccount(account) {
-  try {
-    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
-  } catch {
-    // ponytail: storage can be blocked; the values still show for this page view
-  }
-}
 
 let account = loadAccount();
 
@@ -80,13 +66,22 @@ function renderFieldRow(field) {
   const reveal = field.key === "password"
     ? `<button class="settings-account__reveal" type="button" data-settings-reveal aria-pressed="false" aria-label="Show password">${EYE_OFF}</button>`
     : "";
+  const editDesktop = renderSecondaryButton({ label: "Edit", className: "settings-card__edit settings-card__edit--desktop" }).replace(
+    "<button ",
+    '<button data-settings-edit ',
+  );
+  const editMobile = renderGhostButton({
+    iconSrc: "/assets/IconMore.svg",
+    ariaLabel: `Edit ${field.label}`,
+    className: "settings-card__edit settings-card__edit--mobile",
+  }).replace("<button ", '<button type="button" data-settings-edit ');
   return `<div class="settings-card__row" data-settings-row data-settings-field="${field.key}" data-settings-type="${field.type}">
     <div class="settings-card__row-inner">
       <div class="settings-card__main">
         <span class="settings-card__label">${field.label}:</span>
         <span class="settings-card__value" data-settings-value><span data-settings-text>${escapeHtml(fieldValue(field, false))}</span>${reveal}</span>
       </div>
-      ${renderSecondaryButton({ label: "Edit" }).replace("<button ", '<button data-settings-edit ')}
+      ${editDesktop}${editMobile}
     </div>
   </div>`;
 }
@@ -136,6 +131,7 @@ function renderEditFieldMarkup(field) {
     const { firstName, lastName } = splitName(account.name);
     const first = renderSessionsInput({
       label: "First name",
+      placeholder: "",
       id: "settings-edit-first",
       name: "firstName",
       value: firstName,
@@ -143,6 +139,7 @@ function renderEditFieldMarkup(field) {
     }).replace("<input ", '<input data-settings-edit-first ');
     const last = renderSessionsInput({
       label: "Last name",
+      placeholder: "",
       id: "settings-edit-last",
       name: "lastName",
       value: lastName,
@@ -151,8 +148,31 @@ function renderEditFieldMarkup(field) {
     return `<div class="sessions-add-client__names settings-edit__names">${first}${last}</div>`;
   }
 
+  if (field.key === "email") {
+    const current = renderSessionsInput({
+      label: "Current email address",
+      placeholder: "",
+      type: "email",
+      id: "settings-edit-email-current",
+      name: "currentEmail",
+      value: account.email,
+      fullWidth: true,
+    }).replace("<input ", '<input readonly tabindex="-1" data-settings-edit-email-current ');
+    const next = renderSessionsInput({
+      label: "New email address",
+      placeholder: "Enter your new email address",
+      type: "email",
+      id: "settings-edit-email-new",
+      name: "newEmail",
+      value: "",
+      fullWidth: true,
+    }).replace("<input ", '<input data-settings-edit-input autocomplete="email" ');
+    return `<div class="settings-edit__stack">${current}${next}</div>`;
+  }
+
   return renderSessionsInput({
     label: field.label,
+    placeholder: "",
     type: field.type,
     id: "settings-edit-field",
     name: "settings-edit",
@@ -236,6 +256,47 @@ function syncAccountPresentation(root) {
   });
 }
 
+function armEditFieldsForClick(drawer) {
+  const host = drawer.querySelector("[data-settings-edit-fields]");
+  if (!host) return;
+
+  host.querySelectorAll(".sessions-input__field:not([readonly])").forEach((input) => {
+    delete input.dataset.userActivated;
+    input.addEventListener(
+      "focus",
+      () => {
+        if (input.dataset.userActivated === "true") return;
+        if (input.matches(":focus-visible")) {
+          input.dataset.userActivated = "true";
+          return;
+        }
+        input.blur();
+      },
+      true,
+    );
+  });
+
+  host.addEventListener(
+    "pointerdown",
+    (event) => {
+      const input = event.target.closest(".sessions-input")?.querySelector(".sessions-input__field:not([readonly])");
+      if (input) input.dataset.userActivated = "true";
+    },
+    true,
+  );
+
+  const blurFocusedField = () => {
+    host.querySelectorAll(".sessions-input__field").forEach((input) => {
+      if (document.activeElement === input) input.blur();
+    });
+  };
+
+  requestAnimationFrame(() => {
+    blurFocusedField();
+    requestAnimationFrame(blurFocusedField);
+  });
+}
+
 function openEditDrawer(root, field) {
   const { drawer } = editDrawerNodes(root);
   if (!drawer || !field) return;
@@ -247,15 +308,36 @@ function openEditDrawer(root, field) {
   if (body) body.textContent = copy.body;
   if (fields) fields.innerHTML = renderEditFieldMarkup(field);
   drawer.dataset.field = field.key;
-  setSettingsEditOpen(root, true);
+  armEditFieldsForClick(drawer);
+  setSettingsEditOpen(root, true).then(() => armEditFieldsForClick(drawer));
 }
 
-function saveEditDrawer(root) {
+async function saveEditDrawer(root) {
   const { drawer } = editDrawerNodes(root);
   if (!drawer) return;
   const key = drawer.dataset.field;
   const field = FIELDS.find((item) => item.key === key);
   if (!field) return;
+
+  if (key === "email") {
+    const next = drawer.querySelector("[data-settings-edit-input]")?.value.trim();
+    if (!next) return;
+    if (next.toLowerCase() === account.email.toLowerCase()) return;
+
+    try {
+      const pending = account.pendingEmailChange;
+      if (pending?.email?.toLowerCase() === next.toLowerCase()) {
+        await resendEmailChange();
+      } else {
+        await requestEmailChange(next);
+      }
+      account = loadAccount();
+      openEmailInboxModal(root, next);
+    } catch (error) {
+      console.warn(error);
+    }
+    return;
+  }
 
   if (key === "name") {
     const first = drawer.querySelector("[data-settings-edit-first]")?.value.trim() || "";
@@ -269,9 +351,66 @@ function saveEditDrawer(root) {
     account[key] = next;
   }
 
-  writeAccount(account);
+  saveAccount(account);
+  account = loadAccount();
   syncAccountPresentation(root);
   setSettingsEditOpen(root, false);
+}
+
+function renderEmailInboxModal() {
+  const bodyMarkup = `<div class="settings-email-inbox">
+    <div class="settings-email-inbox__icon"><img class="settings-email-inbox__icon-img" src="/assets/IconMail.svg" width="52" height="52" alt="" aria-hidden="true" /></div>
+    <div class="settings-email-inbox__copy">
+      <h3 class="sessions-modal__title settings-email-inbox__title" id="settings-email-inbox-title">Check your inbox</h3>
+      <p class="sessions-modal__body settings-email-inbox__lead">We&rsquo;ve sent a verification link to</p>
+      <p class="settings-email-inbox__address" data-settings-email-inbox-address></p>
+      <p class="sessions-modal__body settings-email-inbox__follow">Follow the link in the email to confirm your new email address.</p>
+    </div>
+  </div>`;
+
+  const modal = renderSessionsModal({
+    bodyMarkup,
+    secondaryLabel: "Resend",
+    primaryLabel: "Close",
+  })
+    .replace(
+      '<div class="sessions-modal__actions"><button class="sessions-button sessions-button--secondary" type="button"><span class="sessions-button__label">Resend</span></button>',
+      '<div class="sessions-modal__actions"><button class="sessions-button sessions-button--secondary" type="button" data-settings-email-inbox-resend><span class="sessions-button__label">Resend</span></button>',
+    )
+    .replace(
+      '<button class="sessions-button sessions-button--primary" type="button"><span class="sessions-button__label">Close</span></button>',
+      '<button class="sessions-button sessions-button--primary" type="button" data-settings-email-inbox-close><span class="sessions-button__label">Close</span></button>',
+    )
+    .replace('class="sessions-modal__close"', 'class="sessions-modal__close" data-settings-email-inbox-close')
+    .replace(
+      'role="dialog"',
+      'role="dialog" aria-labelledby="settings-email-inbox-title"',
+    );
+
+  return `<div class="settings-dialog settings-email-inbox-dialog" data-settings-email-inbox hidden><button class="settings-dialog__scrim" type="button" data-settings-email-inbox-close aria-label="Close"></button>${modal}</div>`;
+}
+
+function openEmailInboxModal(root, pendingEmail) {
+  const dialog = root.querySelector("[data-settings-email-inbox]");
+  const address = dialog?.querySelector("[data-settings-email-inbox-address]");
+  if (address) address.textContent = pendingEmail;
+  if (dialog) dialog.hidden = false;
+  document.body.classList.add("is-settings-email-inbox-open");
+  const { drawer } = editDrawerNodes(root);
+  if (drawer) drawer.setAttribute("aria-hidden", "true");
+}
+
+function closeEmailInboxModal(root) {
+  const dialog = root.querySelector("[data-settings-email-inbox]");
+  if (dialog) dialog.hidden = true;
+  document.body.classList.remove("is-settings-email-inbox-open");
+  const { drawer } = editDrawerNodes(root);
+  if (drawer && !drawer.hidden) drawer.removeAttribute("aria-hidden");
+}
+
+function isEmailInboxOpen(root) {
+  const dialog = root.querySelector("[data-settings-email-inbox]");
+  return Boolean(dialog && !dialog.hidden);
 }
 
 function renderDeleteModal() {
@@ -285,7 +424,7 @@ function renderDeleteModal() {
     .replace('class="sessions-button sessions-button--primary"', 'class="sessions-button sessions-button--primary" data-settings-delete-confirm')
     .replace('class="sessions-modal__close"', 'class="sessions-modal__close" data-settings-delete-cancel');
 
-  return `<div class="settings-delete" data-settings-delete hidden><button class="settings-delete__scrim" type="button" data-settings-delete-cancel aria-label="Cancel"></button>${modal}</div>`;
+  return `<div class="settings-dialog settings-delete" data-settings-delete hidden><button class="settings-dialog__scrim" type="button" data-settings-delete-cancel aria-label="Cancel"></button>${modal}</div>`;
 }
 
 export function renderSettingsPage() {
@@ -297,7 +436,7 @@ export function renderSettingsPage() {
         <div class="home-shell__rail" id="rail"></div>
         <main class="home-shell__main">
           ${renderPageWrapper({
-            content: `<div class="settings-page">${renderPageTitle({
+            content: `<div class="settings-page"><p class="settings-banner" data-settings-email-verified hidden>Your email address has been updated.</p>${renderPageTitle({
               title: "Settings",
               body: "Update your personal details and manage your account preferences.",
             })}${renderSettingsCards()}</div>`,
@@ -306,6 +445,7 @@ export function renderSettingsPage() {
       </div>
       ${renderSessionsFooter()}
       ${renderEditDrawer()}
+      ${renderEmailInboxModal()}
       ${renderDeleteModal()}
     </div>
   `;
@@ -331,6 +471,12 @@ export function mountSettingsPage(root) {
   linkPrimaryNav(root, { selected: "Settings" });
   bindAccount(root);
   syncAccountPresentation(root);
+
+  if (new URLSearchParams(location.search).get("emailVerified") === "1") {
+    history.replaceState({}, "", "/settings");
+    const banner = root.querySelector("[data-settings-email-verified]");
+    if (banner) banner.hidden = false;
+  }
 }
 
 function paintField(row) {
@@ -356,6 +502,7 @@ function bindAccount(root) {
     }
 
     if (event.target.closest("[data-sessions-settings-edit-scrim], [data-sessions-settings-edit-close]")) {
+      if (isEmailInboxOpen(root)) return;
       setSettingsEditOpen(root, false);
       return;
     }
@@ -369,7 +516,17 @@ function bindAccount(root) {
     }
 
     if (event.target.closest("[data-settings-edit-save]")) {
-      saveEditDrawer(root);
+      void saveEditDrawer(root);
+      return;
+    }
+
+    if (event.target.closest("[data-settings-email-inbox-resend]")) {
+      void resendEmailChange().catch((error) => console.warn(error));
+      return;
+    }
+
+    if (event.target.closest("[data-settings-email-inbox-close]")) {
+      closeEmailInboxModal(root);
       return;
     }
 
@@ -388,6 +545,11 @@ function bindAccount(root) {
 
   root.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
+    if (isEmailInboxOpen(root)) {
+      event.stopPropagation();
+      closeEmailInboxModal(root);
+      return;
+    }
     const { drawer } = editDrawerNodes(root);
     if (drawer && !drawer.hidden) {
       event.stopPropagation();

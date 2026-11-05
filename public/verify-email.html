@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify email · Sessions</title>
+    <meta name="theme-color" content="#0f0f0f" />
+    <link rel="icon" href="/assets/sessions-favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/ds/src/styles/fonts.css" />
+    <link rel="stylesheet" href="/ds/src/styles/globals.css" />
+    <link rel="stylesheet" href="/ds/src/styles/button.css" />
+    <link rel="stylesheet" href="/src/pages/settings.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { mountVerifyEmailPage } from "/src/pages/verifyEmailPage.js";
+
+      mountVerifyEmailPage(document.querySelector("#app"));
+    </script>
+  </body>
+</html>
