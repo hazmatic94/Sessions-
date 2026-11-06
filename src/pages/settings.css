@@ -172,36 +172,111 @@
   padding: var(--spacing-24);
 }
 
-.settings-email-inbox-dialog {
-  z-index: 70;
+.settings-email-inbox-dialog,
+.settings-phone-otp-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 80;
 }
 
-.settings-email-inbox-dialog .settings-dialog__scrim {
+.settings-email-inbox-dialog .settings-dialog__scrim,
+.settings-phone-otp-dialog .settings-dialog__scrim {
   background: color-mix(in srgb, var(--black-900) 42%, transparent);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
 
-.is-settings-email-inbox-open [data-sessions-settings-edit] .sessions-surface {
+.is-settings-verify-open [data-sessions-settings-edit] .sessions-surface {
   filter: blur(3px);
   transition: filter var(--motion-fast) var(--ease-out);
 }
 
-.is-settings-email-inbox-open [data-sessions-settings-edit],
-.is-settings-email-inbox-open [data-sessions-settings-edit-scrim] {
+.is-settings-verify-open [data-sessions-settings-edit],
+.is-settings-verify-open [data-sessions-settings-edit-scrim] {
   pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .settings-email-inbox-dialog .settings-dialog__scrim {
+  .settings-email-inbox-dialog .settings-dialog__scrim,
+  .settings-phone-otp-dialog .settings-dialog__scrim {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
 
-  .is-settings-email-inbox-open [data-sessions-settings-edit] .sessions-surface {
+  .is-settings-verify-open [data-sessions-settings-edit] .sessions-surface {
     filter: none;
     opacity: 0.72;
   }
+}
+
+.settings-phone-otp {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  gap: var(--spacing-8);
+  text-align: center;
+}
+
+.settings-phone-otp__title,
+.settings-phone-otp__lead,
+.settings-phone-otp__number,
+.settings-phone-otp__error {
+  margin: 0;
+}
+
+.settings-phone-otp__lead,
+.settings-phone-otp__error {
+  max-width: 22rem;
+}
+
+.settings-phone-otp__number {
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-b1);
+  font-weight: var(--text-body-b1-medium-weight);
+  line-height: var(--text-body-b1-line-height);
+}
+
+.settings-phone-otp__digits {
+  display: flex;
+  width: 100%;
+  gap: var(--spacing-8);
+  margin-top: var(--spacing-16);
+}
+
+.settings-phone-otp__digit {
+  box-sizing: border-box;
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  height: 48px;
+  padding: 0;
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--spacing-8);
+  background: var(--color-surface-base);
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-big-medium);
+  text-align: center;
+}
+
+.settings-phone-otp__digit:focus {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.settings-phone-otp__error {
+  color: var(--joker-red-400);
+  font-family: var(--font);
+  font-size: var(--text-body-12);
+  line-height: var(--text-body-line-height);
+}
+
+.settings-phone-otp__error[hidden] {
+  display: none;
 }
 
 .settings-dialog[hidden] {
@@ -229,17 +304,6 @@
   align-items: center;
   gap: var(--spacing-16);
   text-align: center;
-}
-
-.settings-email-inbox__icon {
-  display: flex;
-  flex-shrink: 0;
-}
-
-.settings-email-inbox__icon-img {
-  display: block;
-  width: 52px;
-  height: 52px;
 }
 
 .settings-email-inbox__copy {
@@ -467,7 +531,14 @@
     display: inline-flex;
     flex: none;
     align-self: center;
+    box-sizing: border-box;
+    width: var(--button-height);
+    min-width: var(--button-height);
+    height: var(--button-height);
+    min-height: var(--button-height);
+    padding: 0;
     border: 1px solid var(--button-secondary-border);
+    border-radius: 50%;
     background: var(--button-secondary-bg);
     color: var(--joker-white-50);
   }

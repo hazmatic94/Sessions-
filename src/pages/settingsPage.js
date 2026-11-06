@@ -14,9 +14,12 @@ import { escapeHtml } from "/ds/src/utils.js";
 import { renderPageTitle, renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
 import {
+  confirmPhoneChange,
   loadAccount,
   requestEmailChange,
+  requestPhoneChange,
   resendEmailChange,
+  resendPhoneChange,
   saveAccount,
 } from "/src/data/account.js";
 import { setSessionsSurfaceDrawerOpen } from "/src/utils/surfaceDrawer.js";
@@ -43,7 +46,14 @@ const FIELDS = [
     drawerTitle: "Change your email address",
     drawerBody: "Update the email address associated with your account.",
   },
-  { key: "phone", label: "Phone", type: "tel", body: "Update the phone number on your account." },
+  {
+    key: "phone",
+    label: "Phone",
+    type: "tel",
+    body: "Update the phone number associated with your account.",
+    drawerTitle: "Change your phone number",
+    drawerBody: "Update the phone number associated with your account.",
+  },
   { key: "password", label: "Password", type: "password", body: "Update the password on your account." },
 ];
 
@@ -54,6 +64,14 @@ let account = loadAccount();
 
 function displayPhone(phone) {
   return phone.replace(/^\+\d+\s*/, "").trim() || phone;
+}
+
+function formatOtpPhone(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("61") && digits.length > 9) digits = digits.slice(2);
+  if (digits.startsWith("0")) digits = digits.slice(1);
+  const groups = digits.match(/.{1,3}/g) || [];
+  return groups.length ? `+61 ${groups.join(" ")}` : String(phone || "");
 }
 
 function fieldValue(field, revealed) {
@@ -167,6 +185,28 @@ function renderEditFieldMarkup(field) {
       value: "",
       fullWidth: true,
     }).replace("<input ", '<input data-settings-edit-input autocomplete="email" ');
+    return `<div class="settings-edit__stack">${current}${next}</div>`;
+  }
+
+  if (field.key === "phone") {
+    const current = renderSessionsInput({
+      label: "Current phone number",
+      placeholder: "",
+      type: "tel",
+      id: "settings-edit-phone-current",
+      name: "currentPhone",
+      value: displayPhone(account.phone),
+      fullWidth: true,
+    }).replace("<input ", '<input readonly tabindex="-1" data-settings-edit-phone-current ');
+    const next = renderSessionsInput({
+      label: "Enter your new phone number",
+      placeholder: "",
+      type: "tel",
+      id: "settings-edit-phone-new",
+      name: "newPhone",
+      value: "",
+      fullWidth: true,
+    }).replace("<input ", '<input data-settings-edit-input autocomplete="tel" ');
     return `<div class="settings-edit__stack">${current}${next}</div>`;
   }
 
@@ -312,7 +352,19 @@ function openEditDrawer(root, field) {
   setSettingsEditOpen(root, true).then(() => armEditFieldsForClick(drawer));
 }
 
+let editSaveLocked = false;
+
 async function saveEditDrawer(root) {
+  if (editSaveLocked) return;
+  editSaveLocked = true;
+  try {
+    await commitEditDrawer(root);
+  } finally {
+    editSaveLocked = false;
+  }
+}
+
+async function commitEditDrawer(root) {
   const { drawer } = editDrawerNodes(root);
   if (!drawer) return;
   const key = drawer.dataset.field;
@@ -345,6 +397,31 @@ async function saveEditDrawer(root) {
     const nextName = [first, last].filter(Boolean).join(" ");
     if (!nextName) return;
     account.name = nextName;
+  } else if (key === "phone") {
+    const next = drawer.querySelector("#settings-edit-phone-new")?.value.trim()
+      || drawer.querySelector("[data-settings-edit-input]")?.value.trim();
+    const nextDigits = (next || "").replace(/\D/g, "");
+    const currentDigits = displayPhone(account.phone).replace(/\D/g, "");
+    if (!nextDigits || nextDigits === currentDigits) return;
+
+    openPhoneOtpModal(root, next);
+    try {
+      const pending = account.pendingPhoneChange;
+      if (pending?.phone === next) {
+        try {
+          await resendPhoneChange();
+        } catch {
+          await requestPhoneChange(next);
+        }
+      } else {
+        await requestPhoneChange(next);
+      }
+      account = loadAccount();
+    } catch (error) {
+      console.warn(error);
+      showPhoneOtpError(root, "Couldn't send a code. Try again.");
+    }
+    return;
   } else {
     const next = drawer.querySelector("[data-settings-edit-input]")?.value.trim();
     if (!next) return;
@@ -359,7 +436,6 @@ async function saveEditDrawer(root) {
 
 function renderEmailInboxModal() {
   const bodyMarkup = `<div class="settings-email-inbox">
-    <div class="settings-email-inbox__icon"><img class="settings-email-inbox__icon-img" src="/assets/IconMail.svg" width="52" height="52" alt="" aria-hidden="true" /></div>
     <div class="settings-email-inbox__copy">
       <h3 class="sessions-modal__title settings-email-inbox__title" id="settings-email-inbox-title">Check your inbox</h3>
       <p class="sessions-modal__body settings-email-inbox__lead">We&rsquo;ve sent a verification link to</p>
@@ -390,27 +466,160 @@ function renderEmailInboxModal() {
   return `<div class="settings-dialog settings-email-inbox-dialog" data-settings-email-inbox hidden><button class="settings-dialog__scrim" type="button" data-settings-email-inbox-close aria-label="Close"></button>${modal}</div>`;
 }
 
+function hoistVerifyDialog(dialog) {
+  if (dialog && dialog.parentElement !== document.body) document.body.appendChild(dialog);
+}
+
 function openEmailInboxModal(root, pendingEmail) {
-  const dialog = root.querySelector("[data-settings-email-inbox]");
+  const dialog = document.querySelector("[data-settings-email-inbox]");
+  hoistVerifyDialog(dialog);
   const address = dialog?.querySelector("[data-settings-email-inbox-address]");
   if (address) address.textContent = pendingEmail;
   if (dialog) dialog.hidden = false;
-  document.body.classList.add("is-settings-email-inbox-open");
-  const { drawer } = editDrawerNodes(root);
-  if (drawer) drawer.setAttribute("aria-hidden", "true");
+  setVerifyOverlay(root);
 }
 
 function closeEmailInboxModal(root) {
-  const dialog = root.querySelector("[data-settings-email-inbox]");
+  const dialog = document.querySelector("[data-settings-email-inbox]");
   if (dialog) dialog.hidden = true;
-  document.body.classList.remove("is-settings-email-inbox-open");
-  const { drawer } = editDrawerNodes(root);
-  if (drawer && !drawer.hidden) drawer.removeAttribute("aria-hidden");
+  setVerifyOverlay(root);
 }
 
-function isEmailInboxOpen(root) {
-  const dialog = root.querySelector("[data-settings-email-inbox]");
+function isEmailInboxOpen() {
+  const dialog = document.querySelector("[data-settings-email-inbox]");
   return Boolean(dialog && !dialog.hidden);
+}
+
+function renderPhoneOtpModal() {
+  const digits = Array.from({ length: 6 }, (_, index) => {
+    const auto = index === 0 ? ' autocomplete="one-time-code"' : ' autocomplete="off"';
+    return `<input class="settings-phone-otp__digit" type="text" inputmode="numeric" maxlength="1" aria-label="Digit ${index + 1}" data-settings-phone-otp-digit${auto} />`;
+  }).join("");
+  const bodyMarkup = `<div class="settings-phone-otp">
+    <h3 class="sessions-modal__title settings-phone-otp__title" id="settings-phone-otp-title">Verify your phone number</h3>
+    <p class="sessions-modal__body settings-phone-otp__lead">Enter the 6-digit verification code sent to</p>
+    <p class="settings-phone-otp__number" data-settings-phone-otp-number></p>
+    <div class="settings-phone-otp__digits" role="group" aria-label="Verification code">${digits}</div>
+    <p class="settings-phone-otp__error" data-settings-phone-otp-error hidden></p>
+  </div>`;
+
+  const modal = renderSessionsModal({
+    bodyMarkup,
+    secondaryLabel: "Resend",
+    primaryLabel: "Close",
+  })
+    .replace(
+      '<div class="sessions-modal__actions"><button class="sessions-button sessions-button--secondary" type="button"><span class="sessions-button__label">Resend</span></button>',
+      '<div class="sessions-modal__actions"><button class="sessions-button sessions-button--secondary" type="button" data-settings-phone-otp-resend><span class="sessions-button__label">Resend</span></button>',
+    )
+    .replace(
+      '<button class="sessions-button sessions-button--primary" type="button"><span class="sessions-button__label">Close</span></button>',
+      '<button class="sessions-button sessions-button--primary" type="button" data-settings-phone-otp-close><span class="sessions-button__label">Close</span></button>',
+    )
+    .replace('class="sessions-modal__close"', 'class="sessions-modal__close" data-settings-phone-otp-close')
+    .replace('role="dialog"', 'role="dialog" aria-labelledby="settings-phone-otp-title"');
+
+  return `<div class="settings-dialog settings-phone-otp-dialog" data-settings-phone-otp hidden><button class="settings-dialog__scrim" type="button" data-settings-phone-otp-close aria-label="Close"></button>${modal}</div>`;
+}
+
+function phoneOtpDigits() {
+  return [...document.querySelectorAll("[data-settings-phone-otp-digit]")];
+}
+
+function clearPhoneOtp(root) {
+  phoneOtpDigits(root).forEach((input) => {
+    input.value = "";
+  });
+  const error = document.querySelector("[data-settings-phone-otp-error]");
+  if (error) {
+    error.hidden = true;
+    error.textContent = "";
+  }
+  const dialog = document.querySelector("[data-settings-phone-otp]");
+  if (dialog) delete dialog.dataset.submitting;
+}
+
+function showPhoneOtpError(root, message) {
+  const error = document.querySelector("[data-settings-phone-otp-error]");
+  if (!error) return;
+  error.textContent = message;
+  error.hidden = false;
+}
+
+function setVerifyOverlay(root) {
+  const open = isEmailInboxOpen(root) || isPhoneOtpOpen(root);
+  document.body.classList.toggle("is-settings-verify-open", open);
+  const { drawer } = editDrawerNodes(root);
+  if (!drawer) return;
+  if (open) drawer.setAttribute("aria-hidden", "true");
+  else if (!drawer.hidden) drawer.removeAttribute("aria-hidden");
+}
+
+function openPhoneOtpModal(root, phone) {
+  const dialog = document.querySelector("[data-settings-phone-otp]");
+  hoistVerifyDialog(dialog);
+  const number = dialog?.querySelector("[data-settings-phone-otp-number]");
+  if (number) number.textContent = `${formatOtpPhone(phone)}.`;
+  clearPhoneOtp(root);
+  if (dialog) dialog.hidden = false;
+  setVerifyOverlay(root);
+  requestAnimationFrame(() => phoneOtpDigits(root)[0]?.focus());
+}
+
+function closePhoneOtpModal(root) {
+  const dialog = document.querySelector("[data-settings-phone-otp]");
+  if (dialog) dialog.hidden = true;
+  clearPhoneOtp(root);
+  setVerifyOverlay(root);
+}
+
+function isPhoneOtpOpen(root) {
+  const dialog = document.querySelector("[data-settings-phone-otp]");
+  return Boolean(dialog && !dialog.hidden);
+}
+
+function phoneOtpValue(root) {
+  return phoneOtpDigits(root).map((input) => input.value).join("");
+}
+
+async function submitPhoneOtp(root) {
+  const dialog = document.querySelector("[data-settings-phone-otp]");
+  const code = phoneOtpValue(root);
+  if (!dialog || dialog.dataset.submitting === "true" || code.length !== 6) return;
+  dialog.dataset.submitting = "true";
+
+  const result = await confirmPhoneChange(code);
+  if (result.ok) {
+    account = loadAccount();
+    closePhoneOtpModal(root);
+    syncAccountPresentation(root);
+    setSettingsEditOpen(root, false);
+    showSettingsBanner(root, "Your phone number has been updated.");
+    return;
+  }
+
+  delete dialog.dataset.submitting;
+  clearPhoneOtp(root);
+  showPhoneOtpError(
+    root,
+    result.error === "expired"
+      ? "That code expired. Resend a new one."
+      : "That code doesn't match. Try again.",
+  );
+  phoneOtpDigits(root)[0]?.focus();
+}
+
+function fillPhoneOtp(root, value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 6).split("");
+  const inputs = phoneOtpDigits(root);
+  inputs.forEach((input, index) => {
+    input.value = digits[index] || "";
+  });
+  if (digits.length === 6) {
+    void submitPhoneOtp(root);
+    return;
+  }
+  inputs[digits.length]?.focus();
 }
 
 function renderDeleteModal() {
@@ -436,7 +645,7 @@ export function renderSettingsPage() {
         <div class="home-shell__rail" id="rail"></div>
         <main class="home-shell__main">
           ${renderPageWrapper({
-            content: `<div class="settings-page"><p class="settings-banner" data-settings-email-verified hidden>Your email address has been updated.</p>${renderPageTitle({
+            content: `<div class="settings-page"><p class="settings-banner" data-settings-banner hidden></p>${renderPageTitle({
               title: "Settings",
               body: "Update your personal details and manage your account preferences.",
             })}${renderSettingsCards()}</div>`,
@@ -446,6 +655,7 @@ export function renderSettingsPage() {
       ${renderSessionsFooter()}
       ${renderEditDrawer()}
       ${renderEmailInboxModal()}
+      ${renderPhoneOtpModal()}
       ${renderDeleteModal()}
     </div>
   `;
@@ -474,9 +684,15 @@ export function mountSettingsPage(root) {
 
   if (new URLSearchParams(location.search).get("emailVerified") === "1") {
     history.replaceState({}, "", "/settings");
-    const banner = root.querySelector("[data-settings-email-verified]");
-    if (banner) banner.hidden = false;
+    showSettingsBanner(root, "Your email address has been updated.");
   }
+}
+
+function showSettingsBanner(root, message) {
+  const banner = root.querySelector("[data-settings-banner]");
+  if (!banner) return;
+  banner.textContent = message;
+  banner.hidden = false;
 }
 
 function paintField(row) {
@@ -488,7 +704,14 @@ function paintField(row) {
 function bindAccount(root) {
   const deleteDialog = () => root.querySelector("[data-settings-delete]");
 
-  root.addEventListener("click", (event) => {
+  document.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    if (!event.target.closest("[data-settings-edit-save]")) return;
+    event.preventDefault();
+    void saveEditDrawer(root);
+  });
+
+  document.addEventListener("click", (event) => {
     const reveal = event.target.closest("[data-settings-reveal]");
     if (reveal) {
       const row = reveal.closest("[data-settings-row]");
@@ -502,7 +725,7 @@ function bindAccount(root) {
     }
 
     if (event.target.closest("[data-sessions-settings-edit-scrim], [data-sessions-settings-edit-close]")) {
-      if (isEmailInboxOpen(root)) return;
+      if (isEmailInboxOpen(root) || isPhoneOtpOpen(root)) return;
       setSettingsEditOpen(root, false);
       return;
     }
@@ -530,6 +753,22 @@ function bindAccount(root) {
       return;
     }
 
+    if (event.target.closest("[data-settings-phone-otp-resend]")) {
+      clearPhoneOtp(root);
+      void resendPhoneChange()
+        .then(() => phoneOtpDigits(root)[0]?.focus())
+        .catch((error) => {
+          console.warn(error);
+          showPhoneOtpError(root, "Couldn't resend that code. Change your number again.");
+        });
+      return;
+    }
+
+    if (event.target.closest("[data-settings-phone-otp-close]")) {
+      closePhoneOtpModal(root);
+      return;
+    }
+
     if (event.target.closest("[data-settings-delete-open]")) {
       const modal = deleteDialog();
       if (modal) modal.hidden = false;
@@ -543,8 +782,46 @@ function bindAccount(root) {
     }
   });
 
-  root.addEventListener("keydown", (event) => {
+  document.addEventListener("input", (event) => {
+    const input = event.target.closest("[data-settings-phone-otp-digit]");
+    if (!input || !isPhoneOtpOpen(root)) return;
+    const raw = input.value.replace(/\D/g, "");
+    if (raw.length > 1) {
+      fillPhoneOtp(root, raw);
+      return;
+    }
+    input.value = raw.slice(-1);
+    if (input.value) {
+      const inputs = phoneOtpDigits(root);
+      const next = inputs[inputs.indexOf(input) + 1];
+      if (next) next.focus();
+    }
+    if (phoneOtpValue(root).length === 6) void submitPhoneOtp(root);
+  });
+
+  document.addEventListener("paste", (event) => {
+    const input = event.target.closest("[data-settings-phone-otp-digit]");
+    if (!input || !isPhoneOtpOpen(root)) return;
+    event.preventDefault();
+    fillPhoneOtp(root, event.clipboardData?.getData("text") || "");
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const input = event.target.closest("[data-settings-phone-otp-digit]");
+    if (input && isPhoneOtpOpen(root) && event.key === "Backspace" && !input.value) {
+      const inputs = phoneOtpDigits(root);
+      const prev = inputs[inputs.indexOf(input) - 1];
+      if (prev) {
+        prev.value = "";
+        prev.focus();
+      }
+    }
     if (event.key !== "Escape") return;
+    if (isPhoneOtpOpen(root)) {
+      event.stopPropagation();
+      closePhoneOtpModal(root);
+      return;
+    }
     if (isEmailInboxOpen(root)) {
       event.stopPropagation();
       closeEmailInboxModal(root);
