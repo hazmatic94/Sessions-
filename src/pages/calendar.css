@@ -864,6 +864,89 @@
   --calendar-appointment-gutter: var(--spacing-64);
 }
 
+.calendar-block-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 74px;
+  padding: 0 calc(var(--button-height) + var(--spacing-24));
+  background: var(--green-800);
+  color: var(--joker-white-50);
+}
+
+.calendar-block-banner[hidden] {
+  display: none;
+}
+
+.calendar-block-banner h3 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-heading-h3);
+  font-weight: var(--text-heading-weight);
+  line-height: var(--text-heading-line-height);
+  letter-spacing: var(--text-heading-letter-spacing);
+  text-align: center;
+}
+
+.calendar-block-banner .sessions-close {
+  top: 50%;
+  right: var(--spacing-24);
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
+.calendar-stage.is-blocking .calendar-hours::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--calendar-appointment-gutter);
+  background: color-mix(in srgb, var(--black-900) 42%, transparent);
+  pointer-events: none;
+}
+
+.calendar-blocks,
+.calendar-block-preview {
+  position: absolute;
+  z-index: 4;
+}
+
+.calendar-blocks {
+  inset: 0;
+  pointer-events: none;
+}
+
+.calendar-block {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: var(--spacing-4) var(--spacing-8);
+  border: 1px solid color-mix(in srgb, var(--joker-white-50) 28%, transparent);
+  border-radius: var(--spacing-8);
+  background: var(--black-900);
+  color: var(--joker-white-50);
+  font-family: var(--font);
+  font-size: var(--text-body-12);
+  line-height: var(--text-body-line-height);
+  pointer-events: auto;
+  top: calc(var(--appt-start) / 60 * var(--sessions-hour-column-height));
+  height: calc(var(--appt-duration) / 60 * var(--sessions-hour-column-height));
+  left: calc(
+    var(--calendar-appointment-gutter) +
+      var(--appt-staff-index) * ((100% - var(--calendar-appointment-gutter)) / var(--sessions-staff-count, 1))
+  );
+  width: calc((100% - var(--calendar-appointment-gutter)) / var(--sessions-staff-count, 1) - var(--spacing-8));
+}
+
+.calendar-block-preview {
+  pointer-events: none;
+  z-index: 5;
+}
+
 .calendar-appointments {
   position: absolute;
   inset: 0;

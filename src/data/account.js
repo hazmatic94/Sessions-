@@ -11,6 +11,7 @@ const DEFAULT_ACCOUNT = {
   password: "larryjune",
   pendingEmailChange: null,
   pendingPhoneChange: null,
+  pendingPasswordReset: null,
 };
 
 function normalizeAccount(raw) {
@@ -20,6 +21,9 @@ function normalizeAccount(raw) {
   }
   if (merged.pendingPhoneChange && typeof merged.pendingPhoneChange !== "object") {
     merged.pendingPhoneChange = null;
+  }
+  if (merged.pendingPasswordReset && typeof merged.pendingPasswordReset !== "object") {
+    merged.pendingPasswordReset = null;
   }
   return merged;
 }
@@ -216,6 +220,30 @@ export async function confirmPhoneChange(code) {
   account.pendingPhoneChange = null;
   saveAccount(account);
   return { ok: true, phone: account.phone };
+}
+
+/**
+ * Mock today → localStorage + console link.
+ * Later → POST /account/password-reset { email }
+ * @returns {Promise<{ pendingEmail: string }>}
+ */
+export async function requestPasswordReset(email) {
+  const trimmed = String(email || "").trim();
+  if (!trimmed) throw new Error("Email is required");
+
+  const account = loadAccount();
+  const token = newToken();
+  account.pendingPasswordReset = {
+    email: trimmed,
+    token,
+    requestedAt: new Date().toISOString(),
+  };
+  saveAccount(account);
+  if (typeof console !== "undefined") {
+    const origin = typeof location !== "undefined" ? location.origin : "http://127.0.0.1:43123";
+    console.info("[sessions] Password reset link (mock):", `${origin}/reset-password?token=${encodeURIComponent(token)}`);
+  }
+  return { pendingEmail: trimmed };
 }
 
 export function getPendingEmailChange() {

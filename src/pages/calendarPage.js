@@ -6,6 +6,7 @@ import {
 } from "/ds/src/components/navigation/index.js";
 import { applySessionsCalendarSelection, renderSessionsCalendar } from "/ds/src/components/calendar/calendar.js";
 import { renderSessionsAvatar } from "/ds/src/components/avatar/avatar.js";
+import { renderSessionsCloseButton } from "/ds/src/components/button/button.js";
 import { renderSessionsModal } from "/ds/src/components/modal/modal.js";
 import { setupSessionsCalendars } from "/ds/src/components/calendar/interactions.js";
 import {
@@ -41,6 +42,7 @@ import {
   renderCalendarAppointmentsLayer,
   setupCalendarAppointmentHovers,
 } from "/src/pages/calendarAppointments.js";
+import { bindCalendarBlockedTime, renderBlockedTimesLayer } from "/src/pages/calendarBlockedTime.js";
 import { memberColor, outsideQuarters, SHIFT_TEAM, shiftLabel, shiftOn, tintMemberAvatar } from "/src/pages/shiftStore.js";
 
 const STAFF = SHIFT_TEAM;
@@ -87,7 +89,7 @@ function paintCalendarHours(root) {
       hour,
       minute: 0,
     })}${columns}</div>`;
-  }).join("")}${renderCalendarAppointmentsLayer(staff, date)}${renderSessionsCurrentTimeIndicator()}`;
+  }).join("")}${renderCalendarAppointmentsLayer(staff, date)}${renderBlockedTimesLayer(staff, date)}${renderSessionsCurrentTimeIndicator()}`;
   if (scroller) {
     scroller.scrollTop = scrollTop;
     scroller.scrollLeft = 0;
@@ -103,7 +105,8 @@ export function renderCalendarPage() {
       <div id="top-nav" class="home-shell__desktop"></div>
       <div class="home-shell__body">
         <div class="home-shell__rail" id="rail"></div>
-        <div class="calendar-stage" style="--sessions-staff-count: ${STAFF.length}">
+          <div class="calendar-stage" style="--sessions-staff-count: ${STAFF.length}">
+          <div class="calendar-block-banner" data-calendar-block-banner hidden><h3>Select a time to block</h3>${renderSessionsCloseButton({ label: "Cancel", attributes: { "data-calendar-block-cancel": "" } })}</div>
           <div id="calendar-header"></div>
           <div id="staff-header"></div>
           <div id="calendar-days" hidden></div>
@@ -256,6 +259,7 @@ export function mountCalendarPage(root) {
   setupSessionsSlotMenus(root);
   bindSlotMenuHeader(root);
   bindCalendarLayout(root);
+  bindCalendarBlockedTime(root);
   bindMobileDateSheet(root);
   bindCalendarClientPicker(root);
   setupCalendarAppointmentHovers(root);
@@ -440,6 +444,14 @@ function openCalendarDay(root, date) {
   root.querySelector('[data-sessions-calendar-view-option="day"]')?.click();
 }
 
+function beginBlockedTime(root, date) {
+  const stage = root.querySelector(".calendar-stage");
+  const board = stage?.classList.contains("is-view-3day") || stage?.classList.contains("is-view-week");
+  if (board) root.querySelector('[data-sessions-calendar-view-option="day"]')?.click();
+  if (date && date !== calendarStartDate(root)) setCalendarDate(root, date);
+  root.dispatchEvent(new CustomEvent("sessions:block-time", { bubbles: true }));
+}
+
 function formatDayMenuTitle(value) {
   const date = parseNavigatorDate(value);
   const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
@@ -516,6 +528,9 @@ function bindCalendarLayout(root) {
           }),
         );
       }
+      if (action === "blocked" && date) {
+        beginBlockedTime(root, date);
+      }
       return;
     }
     if (event.target.closest("[data-calendar-day-menu]")) return;
@@ -538,6 +553,7 @@ function bindCalendarLayout(root) {
           }),
         );
       }
+      if (action === "blocked") beginBlockedTime(root, calendarStartDate(root));
       if (action === "member") window.location.assign("/team");
       return;
     }

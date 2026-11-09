@@ -173,7 +173,8 @@
 }
 
 .settings-email-inbox-dialog,
-.settings-phone-otp-dialog {
+.settings-phone-otp-dialog,
+.settings-reset-inbox-dialog {
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -182,7 +183,8 @@
 }
 
 .settings-email-inbox-dialog .settings-dialog__scrim,
-.settings-phone-otp-dialog .settings-dialog__scrim {
+.settings-phone-otp-dialog .settings-dialog__scrim,
+.settings-reset-inbox-dialog .settings-dialog__scrim {
   background: color-mix(in srgb, var(--black-900) 42%, transparent);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -200,7 +202,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .settings-email-inbox-dialog .settings-dialog__scrim,
-  .settings-phone-otp-dialog .settings-dialog__scrim {
+  .settings-phone-otp-dialog .settings-dialog__scrim,
+  .settings-reset-inbox-dialog .settings-dialog__scrim {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -277,6 +280,53 @@
 
 .settings-phone-otp__error[hidden] {
   display: none;
+}
+
+.settings-reset-inbox {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  gap: var(--spacing-16);
+}
+
+.settings-reset-inbox__title,
+.settings-reset-inbox__lead,
+.settings-reset-inbox__prompt {
+  margin: 0;
+  text-align: center;
+}
+
+.settings-reset-inbox__email {
+  width: 100%;
+  margin-top: var(--spacing-8);
+  text-align: left;
+}
+
+.settings-reset-inbox__email .sessions-input {
+  width: 100%;
+  max-width: none;
+}
+
+.settings-reset-inbox__prompt {
+  margin-top: var(--spacing-8);
+}
+
+.settings-reset-inbox__resend {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--green-300);
+  font-family: var(--font);
+  font-size: var(--text-body-b1);
+  font-weight: var(--text-body-b1-weight);
+  line-height: var(--text-body-b1-line-height);
+  cursor: pointer;
+}
+
+.settings-reset-inbox__resend:disabled {
+  cursor: default;
 }
 
 .settings-dialog[hidden] {
@@ -424,6 +474,92 @@
   flex-direction: column;
   gap: var(--spacing-24);
   width: 100%;
+}
+
+.settings-password {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-24);
+  width: 100%;
+}
+
+.settings-password__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--input-field-gap);
+  width: 100%;
+}
+
+.settings-password__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+}
+
+.settings-password__forgot {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--green-300);
+  font-family: var(--font);
+  font-size: var(--text-body-14);
+  font-weight: var(--text-body-weight);
+  line-height: var(--text-body-line-height);
+  cursor: pointer;
+}
+
+.settings-password__forgot:hover {
+  color: var(--joker-white-50);
+}
+
+.settings-password__reveal {
+  pointer-events: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--joker-white-50);
+  cursor: pointer;
+}
+
+.settings-password__error {
+  margin: 0;
+  color: var(--joker-red-400);
+  font-family: var(--font);
+  font-size: var(--text-body-12);
+  line-height: var(--text-body-line-height);
+}
+
+.settings-password__error[hidden] {
+  display: none;
+}
+
+.settings-password-reset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  width: 100%;
+}
+
+.settings-password-reset__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-12);
+  margin: 0;
+  color: var(--black-50);
+  font-family: var(--font);
+  font-size: var(--text-body-14);
+  font-weight: var(--text-body-weight);
+  line-height: var(--text-body-line-height);
+}
+
+.settings-password-reset__note-icon {
+  display: inline-flex;
+  flex: none;
+  margin-top: 1px;
+  color: var(--joker-white-50);
 }
 
 [data-sessions-settings-edit] .sessions-add-client__form .sessions-input {

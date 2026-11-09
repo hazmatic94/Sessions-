@@ -18,6 +18,7 @@ import {
   loadAccount,
   requestEmailChange,
   requestPhoneChange,
+  requestPasswordReset,
   resendEmailChange,
   resendPhoneChange,
   saveAccount,
@@ -54,9 +55,18 @@ const FIELDS = [
     drawerTitle: "Change your phone number",
     drawerBody: "Update the phone number associated with your account.",
   },
-  { key: "password", label: "Password", type: "password", body: "Update the password on your account." },
+  {
+    key: "password",
+    label: "Password",
+    type: "password",
+    body: "Update your password to keep your account secure.",
+    drawerTitle: "Change your password",
+    drawerBody: "Update your password to keep your account secure.",
+  },
 ];
 
+const EYE_OPEN = `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M9.97 12.38a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path fill="currentColor" fill-rule="evenodd" d="M1.07 9.41C2.31 5.69 5.83 3 9.97 3c4.14 0 7.66 2.69 8.9 6.41.1.3.1.63 0 .93-1.24 3.72-4.76 6.41-8.9 6.41-4.14 0-7.65-2.69-8.9-6.41a1.2 1.2 0 0 1 0-.93Zm13.28.46a4.38 4.38 0 1 1-8.76 0 4.38 4.38 0 0 1 8.76 0Z"/></svg>`;
+const EYE_CLOSED = `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M2.91 2.17a.75.75 0 0 0-1.06 1.06l15 15a.75.75 0 0 0 1.06-1.06l-2.58-2.58a11 11 0 0 0 3.56-4.04c.1-.3.1-.63 0-.93C17.63 5.92 14.11 3.23 9.97 3.23c-1.21 0-2.41.23-3.54.69L2.91 2.17Zm11.18 9.41c0 .15-.01.3-.03.44l-3.54-3.54a3.13 3.13 0 0 1 3.57 3.1Zm-2.68 3.1-3.54-3.54a3.13 3.13 0 0 0 3.54 3.54ZM5.6 10.11c0-.52.09-1.01.25-1.47L3.27 6.06A11 11 0 0 0 1.07 9.65c-.1.3-.1.63 0 .93 1.24 3.72 4.75 6.41 8.9 6.41 1.25 0 2.44-.25 3.53-.69l-2.06-2.06a4.4 4.4 0 0 1-5.84-4.13Z"/></svg>`;
 const EYE = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const EYE_OFF = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-1.2"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a18.5 18.5 0 0 1-3.2 4.2M6.1 6.1C3.7 7.8 2 12 2 12a18.7 18.7 0 0 0 6.2 5.6 11 11 0 0 0 3.7 1.4"/></svg>`;
 
@@ -210,6 +220,8 @@ function renderEditFieldMarkup(field) {
     return `<div class="settings-edit__stack">${current}${next}</div>`;
   }
 
+  if (field.key === "password") return renderPasswordFields();
+
   return renderSessionsInput({
     label: field.label,
     placeholder: "",
@@ -219,6 +231,49 @@ function renderEditFieldMarkup(field) {
     value: account[field.key],
     fullWidth: true,
   }).replace("<input ", '<input data-settings-edit-input ');
+}
+
+function renderPasswordInput({ id, name, autocomplete }) {
+  return renderSessionsInput({
+    label: "",
+    placeholder: "",
+    type: "password",
+    id,
+    name,
+    value: "",
+    fullWidth: true,
+    rightIcon: EYE_CLOSED,
+  })
+    .replace("<input ", `<input data-settings-password-input autocomplete="${autocomplete}" `)
+    .replace(
+      `<span class="sessions-input__icon sessions-input__icon--trailing" aria-hidden="true">${EYE_CLOSED}</span>`,
+      `<button class="sessions-input__icon sessions-input__icon--trailing settings-password__reveal" type="button" data-settings-password-reveal aria-pressed="false" aria-label="Show password">${EYE_CLOSED}</button>`,
+    );
+}
+
+function renderPasswordFields() {
+  const field = (label, id, name, autocomplete, forgot = false) => {
+    const forgotButton = forgot
+      ? `<button class="settings-password__forgot" type="button" data-settings-forgot-password>Forgot password?</button>`
+      : "";
+    return `<div class="settings-password__field"><div class="settings-password__label-row"><label class="sessions-input__label" for="${id}">${label}</label>${forgotButton}</div>${renderPasswordInput({ id, name, autocomplete })}</div>`;
+  };
+  return `<div class="settings-password">${field("Current password", "settings-edit-password-current", "currentPassword", "current-password", true)}${field("New password", "settings-edit-password-new", "newPassword", "new-password")}${field("Confirm new password", "settings-edit-password-confirm", "confirmPassword", "new-password")}<p class="settings-password__error" data-settings-password-error hidden></p></div>`;
+}
+
+const RESET_NOTE_ICON = `<svg viewBox="0 0 20 20" width="20" height="20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.25" stroke="currentColor" stroke-width="1.5"/><path d="M10 6.15v4.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="13.85" r="0.85" fill="currentColor"/></svg>`;
+
+function renderPasswordReset() {
+  const email = renderSessionsInput({
+    label: "Email address",
+    placeholder: "",
+    type: "email",
+    id: "settings-reset-email",
+    name: "resetEmail",
+    value: account.email,
+    fullWidth: true,
+  }).replace("<input ", '<input autocomplete="email" ');
+  return `<div class="settings-password-reset">${email}<p class="settings-password-reset__note"><span class="settings-password-reset__note-icon">${RESET_NOTE_ICON}</span><span>We have sent a password reset link to this email address</span></p></div>`;
 }
 
 function renderEditDrawer() {
@@ -348,8 +403,29 @@ function openEditDrawer(root, field) {
   if (body) body.textContent = copy.body;
   if (fields) fields.innerHTML = renderEditFieldMarkup(field);
   drawer.dataset.field = field.key;
+  delete drawer.dataset.mode;
+  setEditSaveLabel(drawer, "Save");
   armEditFieldsForClick(drawer);
   setSettingsEditOpen(root, true).then(() => armEditFieldsForClick(drawer));
+}
+
+function setEditSaveLabel(drawer, label) {
+  const labelEl = drawer.querySelector("[data-settings-edit-save] .sessions-button__label");
+  if (labelEl) labelEl.textContent = label;
+}
+
+function showPasswordReset(root) {
+  const { drawer } = editDrawerNodes(root);
+  if (!drawer) return;
+  const title = drawer.querySelector("[data-settings-edit-title]");
+  const body = drawer.querySelector("[data-settings-edit-body]");
+  const fields = drawer.querySelector("[data-settings-edit-fields]");
+  if (title) title.textContent = "Reset password";
+  if (body) body.textContent = "We\u2019ll send you a link to reset your password.";
+  if (fields) fields.innerHTML = renderPasswordReset();
+  drawer.dataset.mode = "reset";
+  setEditSaveLabel(drawer, "Send reset link");
+  armEditFieldsForClick(drawer);
 }
 
 let editSaveLocked = false;
@@ -367,6 +443,18 @@ async function saveEditDrawer(root) {
 async function commitEditDrawer(root) {
   const { drawer } = editDrawerNodes(root);
   if (!drawer) return;
+  if (drawer.dataset.mode === "reset") {
+    const email = drawer.querySelector("#settings-reset-email")?.value.trim();
+    if (!email) return;
+    openResetInboxModal(root, email);
+    try {
+      await requestPasswordReset(email);
+    } catch (error) {
+      console.warn(error);
+    }
+    return;
+  }
+
   const key = drawer.dataset.field;
   const field = FIELDS.find((item) => item.key === key);
   if (!field) return;
@@ -422,6 +510,31 @@ async function commitEditDrawer(root) {
       showPhoneOtpError(root, "Couldn't send a code. Try again.");
     }
     return;
+  } else if (key === "password") {
+    const current = drawer.querySelector("#settings-edit-password-current")?.value ?? "";
+    const next = drawer.querySelector("#settings-edit-password-new")?.value ?? "";
+    const confirmValue = drawer.querySelector("#settings-edit-password-confirm")?.value ?? "";
+    const error = drawer.querySelector("[data-settings-password-error]");
+    const fail = (message) => {
+      if (!error) return;
+      error.textContent = message;
+      error.hidden = false;
+    };
+    if (!current || !next || !confirmValue) {
+      fail("Fill in all three password fields.");
+      return;
+    }
+    if (current !== account.password) {
+      fail("That current password doesn't match.");
+      return;
+    }
+    if (next !== confirmValue) {
+      fail("Those new passwords don't match.");
+      return;
+    }
+    if (error) error.hidden = true;
+    account.password = next;
+    showSettingsBanner(root, "Your password has been updated.");
   } else {
     const next = drawer.querySelector("[data-settings-edit-input]")?.value.trim();
     if (!next) return;
@@ -546,8 +659,88 @@ function showPhoneOtpError(root, message) {
   error.hidden = false;
 }
 
+const RESET_RESEND_SECONDS = 60;
+let resetResendTimer = 0;
+
+function renderResetInboxModal() {
+  const email = renderSessionsInput({
+    label: "Email address",
+    placeholder: "",
+    type: "email",
+    id: "settings-reset-inbox-email",
+    name: "resetInboxEmail",
+    value: "",
+    fullWidth: true,
+  }).replace("<input ", '<input readonly tabindex="-1" data-settings-reset-inbox-email ');
+  const bodyMarkup = `<div class="settings-reset-inbox">
+    <h3 class="sessions-modal__title settings-reset-inbox__title" id="settings-reset-inbox-title">Check your inbox</h3>
+    <p class="sessions-modal__body settings-reset-inbox__lead">If an account exists for that email address, we&rsquo;ll send a password reset link.</p>
+    <div class="settings-reset-inbox__email">${email}</div>
+    <p class="settings-reset-inbox__prompt">Didn&rsquo;t receive an email?</p>
+    <button class="settings-reset-inbox__resend" type="button" data-settings-reset-inbox-resend disabled>Resend link (${RESET_RESEND_SECONDS}s)</button>
+  </div>`;
+
+  const modal = renderSessionsModal({
+    bodyMarkup,
+    secondaryLabel: "",
+    primaryLabel: "Done",
+  })
+    .replace(
+      '<button class="sessions-button sessions-button--primary" type="button"><span class="sessions-button__label">Done</span></button>',
+      '<button class="sessions-button sessions-button--primary" type="button" data-settings-reset-inbox-close><span class="sessions-button__label">Done</span></button>',
+    )
+    .replace('class="sessions-modal__close"', 'class="sessions-modal__close" data-settings-reset-inbox-close')
+    .replace('role="dialog"', 'role="dialog" aria-labelledby="settings-reset-inbox-title"');
+
+  return `<div class="settings-dialog settings-reset-inbox-dialog" data-settings-reset-inbox hidden><button class="settings-dialog__scrim" type="button" data-settings-reset-inbox-close aria-label="Close"></button>${modal}</div>`;
+}
+
+function paintResetResend(dialog, seconds) {
+  const button = dialog?.querySelector("[data-settings-reset-inbox-resend]");
+  if (!button) return;
+  const waiting = seconds > 0;
+  button.disabled = waiting;
+  button.textContent = waiting ? `Resend link (${seconds}s)` : "Resend link";
+}
+
+function startResetResendCountdown(dialog) {
+  window.clearInterval(resetResendTimer);
+  let left = RESET_RESEND_SECONDS;
+  paintResetResend(dialog, left);
+  resetResendTimer = window.setInterval(() => {
+    left -= 1;
+    paintResetResend(dialog, left);
+    if (left <= 0) window.clearInterval(resetResendTimer);
+  }, 1000);
+}
+
+function openResetInboxModal(root, email) {
+  const dialog = document.querySelector("[data-settings-reset-inbox]");
+  hoistVerifyDialog(dialog);
+  const input = dialog?.querySelector("[data-settings-reset-inbox-email]");
+  if (input) input.value = email;
+  if (dialog) {
+    dialog.dataset.email = email;
+    dialog.hidden = false;
+    startResetResendCountdown(dialog);
+  }
+  setVerifyOverlay(root);
+}
+
+function closeResetInboxModal(root) {
+  window.clearInterval(resetResendTimer);
+  const dialog = document.querySelector("[data-settings-reset-inbox]");
+  if (dialog) dialog.hidden = true;
+  setVerifyOverlay(root);
+}
+
+function isResetInboxOpen() {
+  const dialog = document.querySelector("[data-settings-reset-inbox]");
+  return Boolean(dialog && !dialog.hidden);
+}
+
 function setVerifyOverlay(root) {
-  const open = isEmailInboxOpen(root) || isPhoneOtpOpen(root);
+  const open = isEmailInboxOpen(root) || isPhoneOtpOpen(root) || isResetInboxOpen();
   document.body.classList.toggle("is-settings-verify-open", open);
   const { drawer } = editDrawerNodes(root);
   if (!drawer) return;
@@ -656,6 +849,7 @@ export function renderSettingsPage() {
       ${renderEditDrawer()}
       ${renderEmailInboxModal()}
       ${renderPhoneOtpModal()}
+      ${renderResetInboxModal()}
       ${renderDeleteModal()}
     </div>
   `;
@@ -703,15 +897,41 @@ function paintField(row) {
 
 function bindAccount(root) {
   const deleteDialog = () => root.querySelector("[data-settings-delete]");
+  let saveFromPointer = false;
 
   document.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     if (!event.target.closest("[data-settings-edit-save]")) return;
     event.preventDefault();
+    saveFromPointer = true;
     void saveEditDrawer(root);
   });
 
+  document.addEventListener("pointerup", () => {
+    if (!saveFromPointer) return;
+    setTimeout(() => {
+      saveFromPointer = false;
+    }, 0);
+  });
+
   document.addEventListener("click", (event) => {
+    const passwordReveal = event.target.closest("[data-settings-password-reveal]");
+    if (passwordReveal) {
+      const input = passwordReveal.closest(".sessions-input__control")?.querySelector("[data-settings-password-input]");
+      if (!input) return;
+      const shown = input.type === "password";
+      input.type = shown ? "text" : "password";
+      passwordReveal.setAttribute("aria-pressed", String(shown));
+      passwordReveal.setAttribute("aria-label", shown ? "Hide password" : "Show password");
+      passwordReveal.innerHTML = shown ? EYE_OPEN : EYE_CLOSED;
+      return;
+    }
+
+    if (event.target.closest("[data-settings-forgot-password]")) {
+      showPasswordReset(root);
+      return;
+    }
+
     const reveal = event.target.closest("[data-settings-reveal]");
     if (reveal) {
       const row = reveal.closest("[data-settings-row]");
@@ -725,7 +945,7 @@ function bindAccount(root) {
     }
 
     if (event.target.closest("[data-sessions-settings-edit-scrim], [data-sessions-settings-edit-close]")) {
-      if (isEmailInboxOpen(root) || isPhoneOtpOpen(root)) return;
+      if (isEmailInboxOpen(root) || isPhoneOtpOpen(root) || isResetInboxOpen()) return;
       setSettingsEditOpen(root, false);
       return;
     }
@@ -739,6 +959,10 @@ function bindAccount(root) {
     }
 
     if (event.target.closest("[data-settings-edit-save]")) {
+      if (saveFromPointer) {
+        saveFromPointer = false;
+        return;
+      }
       void saveEditDrawer(root);
       return;
     }
@@ -766,6 +990,25 @@ function bindAccount(root) {
 
     if (event.target.closest("[data-settings-phone-otp-close]")) {
       closePhoneOtpModal(root);
+      return;
+    }
+
+    if (event.target.closest("[data-settings-reset-inbox-resend]")) {
+      const dialog = document.querySelector("[data-settings-reset-inbox]");
+      const email = dialog?.dataset.email;
+      if (!dialog || !email) return;
+      void requestPasswordReset(email)
+        .then(() => startResetResendCountdown(dialog))
+        .catch((error) => console.warn(error));
+      return;
+    }
+
+    if (event.target.closest("[data-settings-reset-inbox-close]")) {
+      if (saveFromPointer) {
+        saveFromPointer = false;
+        return;
+      }
+      closeResetInboxModal(root);
       return;
     }
 
@@ -820,6 +1063,11 @@ function bindAccount(root) {
     if (isPhoneOtpOpen(root)) {
       event.stopPropagation();
       closePhoneOtpModal(root);
+      return;
+    }
+    if (isResetInboxOpen()) {
+      event.stopPropagation();
+      closeResetInboxModal(root);
       return;
     }
     if (isEmailInboxOpen(root)) {
