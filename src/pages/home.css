@@ -106,7 +106,18 @@ body {
   }
 }
 
+.sessions-surface-step:has(.sessions-avatar-edit) > .sessions-client-edit__nav {
+  margin-bottom: var(--sessions-step-nav-gap);
+}
+
+.sessions-surface-step .sessions-avatar-edit,
+.sessions-client-edit .sessions-avatar-edit {
+  margin-top: 0;
+}
+
 .home-shell__rail {
+  position: relative;
+  z-index: 56;
   display: flex;
   flex-shrink: 0;
   align-self: stretch;

@@ -475,11 +475,6 @@
 }
 
 @media (max-width: 768px) {
-  [data-sessions-client-profile] [data-sessions-edit-team] .sessions-surface-step:has(.sessions-avatar-edit)
-    > .sessions-client-edit__nav {
-    margin-bottom: var(--spacing-24);
-  }
-
   [data-sessions-client-profile]:has([data-sessions-edit-team]) [data-sessions-client-profile-body] {
     overflow: hidden;
   }

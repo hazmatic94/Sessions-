@@ -258,7 +258,7 @@ function renderPasswordFields() {
       : "";
     return `<div class="settings-password__field"><div class="settings-password__label-row"><label class="sessions-input__label" for="${id}">${label}</label>${forgotButton}</div>${renderPasswordInput({ id, name, autocomplete })}</div>`;
   };
-  return `<div class="settings-password">${field("Current password", "settings-edit-password-current", "currentPassword", "current-password", true)}${field("New password", "settings-edit-password-new", "newPassword", "new-password")}${field("Confirm new password", "settings-edit-password-confirm", "confirmPassword", "new-password")}<p class="settings-password__error" data-settings-password-error hidden></p></div>`;
+  return `<div class="settings-password">${field("Current password", "settings-edit-password-current", "currentPassword", "current-password", true)}<p class="settings-password__error" data-settings-password-error hidden></p>${field("New password", "settings-edit-password-new", "newPassword", "new-password")}${field("Confirm new password", "settings-edit-password-confirm", "confirmPassword", "new-password")}</div>`;
 }
 
 const RESET_NOTE_ICON = `<svg viewBox="0 0 20 20" width="20" height="20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.25" stroke="currentColor" stroke-width="1.5"/><path d="M10 6.15v4.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="13.85" r="0.85" fill="currentColor"/></svg>`;
@@ -511,25 +511,28 @@ async function commitEditDrawer(root) {
     }
     return;
   } else if (key === "password") {
+    account = loadAccount();
     const current = drawer.querySelector("#settings-edit-password-current")?.value ?? "";
     const next = drawer.querySelector("#settings-edit-password-new")?.value ?? "";
     const confirmValue = drawer.querySelector("#settings-edit-password-confirm")?.value ?? "";
     const error = drawer.querySelector("[data-settings-password-error]");
-    const fail = (message) => {
+    const fail = (message, input) => {
       if (!error) return;
+      const field = input?.closest(".settings-password__field");
+      if (field) field.insertAdjacentElement("afterend", error);
       error.textContent = message;
       error.hidden = false;
     };
     if (!current || !next || !confirmValue) {
-      fail("Fill in all three password fields.");
+      fail("Fill in all three password fields.", drawer.querySelector("#settings-edit-password-current"));
       return;
     }
     if (current !== account.password) {
-      fail("That current password doesn't match.");
+      fail("That current password doesn't match.", drawer.querySelector("#settings-edit-password-current"));
       return;
     }
     if (next !== confirmValue) {
-      fail("Those new passwords don't match.");
+      fail("Those new passwords don't match.", drawer.querySelector("#settings-edit-password-confirm"));
       return;
     }
     if (error) error.hidden = true;

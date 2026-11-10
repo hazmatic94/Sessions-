@@ -20,6 +20,29 @@
   margin-bottom: calc(var(--spacing-24) * -1);
 }
 
+/* Safari drops padding-bottom on the last flex item in this scroller, so the buttons sit on the drawer edge. */
+[data-sessions-client-profile] .sessions-client-edit__actions {
+  padding-top: var(--spacing-32);
+  padding-bottom: 0;
+}
+
+[data-sessions-client-profile] .sessions-client-edit .sessions-notifications::after {
+  content: "";
+  flex: 0 0 42px;
+  height: 42px;
+}
+
+@media (max-width: 768px) {
+  [data-sessions-client-profile] .sessions-client-edit__actions {
+    padding-top: 0;
+  }
+
+  [data-sessions-client-profile] .sessions-client-edit .sessions-notifications::after {
+    flex-basis: 32px;
+    height: 32px;
+  }
+}
+
 @media (max-width: 1200px) {
   .clients-page .sessions-client-list {
     grid-template-columns: minmax(0, 1.6fr) minmax(140px, 1fr) minmax(88px, 0.7fr);
