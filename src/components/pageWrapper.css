@@ -3,7 +3,7 @@
   width: 100%;
   max-width: 1440px;
   margin-inline: auto;
-  padding: 42px;
+  padding: var(--spacing-24);
 }
 
 .page-title {
@@ -34,7 +34,6 @@
   .home-shell .page-wrapper > div > .page-title {
     flex-direction: column;
     align-items: stretch;
-    margin-bottom: calc(32px - var(--spacing-24));
   }
 
   .home-shell .page-wrapper > div > .page-title .page-title__actions {

@@ -1,0 +1,7 @@
+html,
+body,
+#app,
+.auth-screen {
+  height: 100%;
+  background: var(--black-900);
+}

@@ -4,10 +4,6 @@
   gap: var(--spacing-24);
 }
 
-.clients-page > .page-title {
-  margin-bottom: calc(42px - var(--spacing-24));
-}
-
 .clients-page .sessions-chip--count {
   padding-inline: var(--spacing-8);
   border-color: var(--green-500);
@@ -22,24 +18,19 @@
 
 /* Safari drops padding-bottom on the last flex item in this scroller, so the buttons sit on the drawer edge. */
 [data-sessions-client-profile] .sessions-client-edit__actions {
-  padding-top: var(--spacing-32);
+  padding-top: calc(var(--spacing-32) + var(--spacing-24));
   padding-bottom: 0;
 }
 
 [data-sessions-client-profile] .sessions-client-edit .sessions-notifications::after {
   content: "";
-  flex: 0 0 42px;
-  height: 42px;
+  flex: 0 0 var(--spacing-24);
+  height: var(--spacing-24);
 }
 
 @media (max-width: 768px) {
   [data-sessions-client-profile] .sessions-client-edit__actions {
     padding-top: 0;
-  }
-
-  [data-sessions-client-profile] .sessions-client-edit .sessions-notifications::after {
-    flex-basis: 32px;
-    height: 32px;
   }
 }
 

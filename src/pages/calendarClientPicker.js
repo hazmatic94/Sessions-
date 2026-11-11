@@ -369,9 +369,27 @@ function mergePendingBooking(root, patch) {
   root.dataset.calendarPendingBooking = JSON.stringify({ ...current, ...patch });
 }
 
+function openedFromCalendarSlot(detail) {
+  return (
+    detail?.hour != null &&
+    detail?.minute != null &&
+    detail.hour !== "" &&
+    detail.minute !== "" &&
+    !detail.fromCalendarAdd
+  );
+}
+
+{
+  if (openedFromCalendarSlot({ hour: "14", minute: "45" }) !== true) throw new Error("openedFromCalendarSlot");
+  if (openedFromCalendarSlot({ fromCalendarAdd: true, hour: "14", minute: "45" }) !== false) {
+    throw new Error("openedFromCalendarSlot add");
+  }
+  if (openedFromCalendarSlot({}) !== false) throw new Error("openedFromCalendarSlot empty");
+}
+
 function summaryBackPanel(root) {
-  const booking = pendingBooking(root);
-  return booking.appointmentId ? "service" : "time";
+  if (pendingBooking(root).appointmentId) return "service";
+  return root.dataset.calendarBookingFromAdd === "true" ? "time" : "service";
 }
 
 function resetPickerChrome(root, { resetPending = false } = {}) {
@@ -485,8 +503,13 @@ function continueWithServices(root) {
     root,
     normalizeBookingForSave({ ...pendingBooking(root), services, service: services[0] }),
   );
-  paintBookingTimePanel(root, pendingBooking(root));
-  goToBookingPanel(root, "time", { direction: "forward" });
+  if (root.dataset.calendarBookingFromAdd === "true") {
+    paintBookingTimePanel(root, pendingBooking(root));
+    goToBookingPanel(root, "time", { direction: "forward" });
+    return;
+  }
+  paintSummary(root);
+  goToBookingPanel(root, "summary", { direction: "forward" });
 }
 
 function selectClient(root, client) {
@@ -503,6 +526,7 @@ function pinAddServiceActions(root) {
 }
 
 function openBookingCheckout(root, appointment) {
+  delete root.dataset.calendarBookingFromAdd;
   root.dataset.calendarPendingBooking = JSON.stringify(appointmentToPendingBooking(appointment));
   paintPickerList(root, "");
   paintServiceList(root);
@@ -516,8 +540,8 @@ export function bindCalendarClientPicker(root) {
       detail?.date ||
       root.querySelector("[data-sessions-navigator]")?.dataset.sessionsNavigatorValue ||
       "";
-    if (detail?.fromCalendarAdd) root.dataset.calendarBookingFromAdd = "true";
-    else delete root.dataset.calendarBookingFromAdd;
+    if (openedFromCalendarSlot(detail)) delete root.dataset.calendarBookingFromAdd;
+    else root.dataset.calendarBookingFromAdd = "true";
     root.dataset.calendarPendingBooking = JSON.stringify(
       normalizeBookingForSave({ ...(detail ?? {}), date }),
     );

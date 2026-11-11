@@ -42,7 +42,7 @@ import {
   renderCalendarAppointmentsLayer,
   setupCalendarAppointmentHovers,
 } from "/src/pages/calendarAppointments.js";
-import { bindCalendarBlockedTime, renderBlockedTimesLayer } from "/src/pages/calendarBlockedTime.js";
+import { bindCalendarBlockedTime, renderBlockedTimesLayer, renderCalendarBlockEditor } from "/src/pages/calendarBlockedTime.js";
 import { memberColor, outsideQuarters, SHIFT_TEAM, shiftLabel, shiftOn, tintMemberAvatar } from "/src/pages/shiftStore.js";
 
 const STAFF = SHIFT_TEAM;
@@ -122,6 +122,7 @@ export function renderCalendarPage() {
       </div>
       ${renderCalendarDateSheet()}
       ${renderCalendarClientPicker()}
+      ${renderCalendarBlockEditor()}
     </div>
   `;
 }
@@ -204,6 +205,45 @@ function paintSlotMenuHeader(root, { staffName = "", date = "", fromAdd = false 
   context.hidden = false;
 }
 
+function slotMenuTop(anchorTop, anchorBottom, menuHeight, viewHeight, gap = 8, margin = 8) {
+  const below = anchorBottom + gap;
+  const above = anchorTop - gap - menuHeight;
+  const fitsBelow = below + menuHeight <= viewHeight - margin;
+  const fitsAbove = above >= margin;
+  const top = !fitsBelow && (fitsAbove || anchorTop > viewHeight - anchorBottom) ? above : below;
+  const limit = Math.max(margin, viewHeight - menuHeight - margin);
+  return Math.min(Math.max(margin, top), limit);
+}
+
+{
+  if (slotMenuTop(700, 740, 160, 800) !== 532) throw new Error("slotMenuTop below");
+  if (slotMenuTop(100, 140, 160, 800) !== 148) throw new Error("slotMenuTop above");
+}
+
+function placeSlotMenuInView(root) {
+  const popover = root.querySelector("[data-sessions-slot-menu-popover]");
+  if (!popover || popover.hidden) return;
+  const anchor = popover.classList.contains("is-add")
+    ? root.querySelector("[data-sessions-add-trigger]")
+    : root.querySelector(".sessions-hour-column__slot.is-selected");
+  if (!anchor) return;
+  const box = anchor.getBoundingClientRect();
+  const height = popover.offsetHeight;
+  const width = popover.offsetWidth;
+  const margin = 8;
+  const center = Math.min(
+    Math.max(box.left + box.width / 2, margin + width / 2),
+    window.innerWidth - margin - width / 2,
+  );
+  popover.style.top = `${slotMenuTop(box.top, box.bottom, height, window.innerHeight)}px`;
+  popover.style.left = `${center}px`;
+}
+
+function bindSlotMenuInView(root) {
+  root.addEventListener("click", () => placeSlotMenuInView(root));
+  window.addEventListener("resize", () => placeSlotMenuInView(root));
+}
+
 function bindSlotMenuHeader(root) {
   root.addEventListener("sessions:slot-menu-open", (event) => {
     paintSlotMenuHeader(root, event.detail);
@@ -257,6 +297,7 @@ export function mountCalendarPage(root) {
   setupSessionsTeamMenus(root);
   root.querySelector("[data-sessions-slot-menu-root]")?.remove();
   setupSessionsSlotMenus(root);
+  bindSlotMenuInView(root);
   bindSlotMenuHeader(root);
   bindCalendarLayout(root);
   bindCalendarBlockedTime(root);

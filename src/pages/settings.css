@@ -1,11 +1,7 @@
 .settings-page {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-32);
-}
-
-.settings-page > .page-title {
-  margin-bottom: calc(42px - var(--spacing-32));
+  gap: var(--spacing-24);
 }
 
 .settings-card {
@@ -450,18 +446,19 @@
 [data-sessions-settings-edit] .sessions-surface {
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-height: 0;
-}
-
-[data-sessions-settings-edit] .sessions-notifications.sessions-surface-step {
-  flex: 1 1 auto;
-  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
+[data-sessions-settings-edit] .sessions-notifications.sessions-surface-step {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
 [data-sessions-settings-edit] .sessions-add-client__actions {
-  margin-top: auto;
-  flex-shrink: 0;
+  margin-top: 0;
 }
 
 [data-sessions-settings-edit] .settings-edit__names {
@@ -587,10 +584,6 @@
 }
 
 @media (max-width: 768px) {
-  .settings-page > .page-title {
-    margin-bottom: calc(32px - var(--spacing-32));
-  }
-
   [data-sessions-settings-edit].sessions-surface-drawer {
     top: var(--mobile-menu-height);
     left: 0;
@@ -609,18 +602,17 @@
   [data-sessions-settings-edit] .sessions-surface {
     width: 100%;
     max-width: none;
-    min-height: 100%;
-    overflow: hidden;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
     border-left: 0;
     background: var(--black-900);
   }
 
   [data-sessions-settings-edit] .sessions-notifications {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding: 32px 24px 0;
+    flex: 0 0 auto;
+    overflow: visible;
+    padding: var(--spacing-24) var(--spacing-24) 0;
   }
 
   [data-sessions-settings-edit] .sessions-add-client__nav {
@@ -630,7 +622,7 @@
   }
 
   [data-sessions-settings-edit] .sessions-add-client__actions {
-    padding: var(--spacing-32) 24px 32px;
+    padding: calc(var(--spacing-32) + var(--spacing-24)) var(--spacing-24) var(--spacing-24);
   }
 
   .settings-card__row-inner {

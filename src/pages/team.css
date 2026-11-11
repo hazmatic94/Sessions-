@@ -4,10 +4,6 @@
   gap: var(--spacing-24);
 }
 
-.team-page > .page-title {
-  margin-bottom: calc(42px - var(--spacing-24));
-}
-
 .team-page [data-team-panel="members"] > .sessions-filter-bar {
   margin-bottom: calc(var(--spacing-24) * -1);
 }
@@ -491,17 +487,15 @@
   }
 
   [data-sessions-edit-team] .sessions-add-client__form {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    flex: 0 0 auto;
+    overflow: visible;
   }
 
   [data-sessions-client-profile] [data-sessions-edit-team] .sessions-client-edit__actions {
-    margin-top: auto;
+    margin-top: 0;
     flex-shrink: 0;
-    padding-top: var(--spacing-32);
-    padding-bottom: 32px;
+    padding-top: calc(var(--spacing-32) + var(--spacing-24));
+    padding-bottom: var(--spacing-24);
   }
 }
 
@@ -794,17 +788,16 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  padding: var(--spacing-32);
+  padding: var(--spacing-24);
   overflow: hidden;
 }
 
 .team-shift-edit .sessions-modal {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
   width: 100%;
   max-width: none;
-  min-height: 0;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -825,6 +818,16 @@
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.team-shift-edit .sessions-modal,
+.team-shift-edit .sessions-modal__content,
+.team-shift-edit .sessions-modal__copy {
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .team-shift-edit > .sessions-surface-close {
@@ -833,20 +836,16 @@
 
 .team-shift-edit .sessions-modal__content {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: var(--spacing-24);
-  min-height: 0;
 }
 
 .team-shift-edit .sessions-modal__copy {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
   padding-right: 0;
   gap: var(--spacing-24);
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
 }
 
 .team-shift-edit .sessions-modal__body {
@@ -948,11 +947,11 @@
 
 .team-shift-edit .sessions-modal__actions {
   flex-shrink: 0;
-  gap: var(--spacing-16);
+  gap: var(--spacing-24);
   align-items: center;
-  margin-top: auto;
-  padding-top: var(--spacing-32);
-  padding-bottom: 42px;
+  margin-top: 0;
+  padding-top: calc(var(--spacing-32) + var(--spacing-24));
+  padding-bottom: 0;
 }
 
 .team-shift-edit .sessions-modal__actions .team-shift-edit__delete {
@@ -1004,7 +1003,7 @@
   }
 
   .team-shift-edit__page {
-    padding: 32px 24px 0;
+    padding: var(--spacing-24);
   }
 
   .team-shift-edit__nav {
@@ -1022,9 +1021,8 @@
   }
 
   .team-shift-edit .sessions-modal {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: hidden;
+    flex: 0 0 auto;
+    overflow: visible;
     border: 0;
     border-radius: 0;
     padding: 0;
@@ -1039,18 +1037,13 @@
   }
 
   .team-shift-edit .sessions-modal__copy {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
   }
 
   .team-shift-edit .sessions-modal__actions {
-    flex-shrink: 0;
-    margin-top: auto;
-    padding-top: var(--spacing-32);
-    padding-bottom: 32px;
+    margin-top: 0;
+    padding-top: calc(var(--spacing-32) + var(--spacing-24));
+    padding-bottom: 0;
   }
 }
 

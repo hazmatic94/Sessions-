@@ -106,6 +106,68 @@ body {
   }
 }
 
+.sessions-surface-step,
+[data-sessions-client-profile] {
+  --sessions-step-nav-gap: var(--spacing-24);
+  --sessions-inner-gap: var(--spacing-24);
+}
+
+.sessions-notifications,
+.sessions-client-profile__header {
+  padding: var(--spacing-24) var(--spacing-24) 0;
+}
+
+.sessions-client-profile {
+  padding-bottom: var(--spacing-24);
+}
+
+.sessions-client-profile .sessions-client-card,
+.sessions-client-profile__list {
+  margin-inline: var(--spacing-24);
+}
+
+.sessions-client-profile > .sessions-client-profile__list,
+.sessions-client-profile > * + * {
+  margin-top: var(--spacing-24);
+}
+
+.sessions-client-edit__actions,
+.sessions-add-client__actions {
+  gap: var(--spacing-24);
+  margin-top: 0;
+}
+
+.sessions-client-edit__actions {
+  padding-top: calc(var(--spacing-32) + var(--spacing-24));
+  padding-bottom: var(--spacing-24);
+}
+
+.sessions-add-client__actions {
+  padding: calc(var(--spacing-32) + var(--spacing-24)) var(--spacing-24) var(--spacing-24);
+}
+
+.sessions-add-client__form,
+.sessions-surface-step .sessions-add-client__form,
+.sessions-surface-step .sessions-add-client__actions--inline,
+[data-sessions-add-client] .sessions-notifications,
+[data-sessions-add-service] .sessions-notifications {
+  gap: var(--spacing-24);
+}
+
+.sessions-surface-step .sessions-add-client__form,
+.sessions-surface-step .sessions-add-client__actions--inline {
+  margin-top: var(--spacing-24);
+}
+
+[data-sessions-add-service] .sessions-notifications,
+[data-calendar-client-picker-add-panel][data-sessions-add-client] {
+  padding-bottom: var(--spacing-24);
+}
+
+[data-sessions-add-service] .sessions-add-client__actions {
+  padding: calc(var(--spacing-32) + var(--spacing-24)) 0 0;
+}
+
 .sessions-surface-step:has(.sessions-avatar-edit) > .sessions-client-edit__nav {
   margin-bottom: var(--sessions-step-nav-gap);
 }
@@ -185,13 +247,32 @@ body {
   }
 
   .home-shell .page-wrapper {
-    padding: 32px 24px;
-    padding-top: calc(var(--mobile-menu-height) + 32px);
+    padding: var(--spacing-24);
+    padding-top: calc(var(--mobile-menu-height) + var(--spacing-24));
   }
 
-  .home-card-stack,
-  .home-card-row {
-    gap: 20px;
+  .sessions-client-profile,
+  [data-sessions-client-profile] .sessions-client-edit__actions {
+    padding-bottom: var(--spacing-24);
+  }
+
+  .sessions-client-profile__header,
+  [data-sessions-client-profile] .sessions-client-edit .sessions-notifications,
+  [data-sessions-add-client] .sessions-notifications {
+    padding: var(--spacing-24) var(--spacing-24) 0;
+  }
+
+  .sessions-client-profile .sessions-client-card,
+  .sessions-client-profile__list {
+    margin-inline: var(--spacing-24);
+  }
+
+  [data-sessions-client-profile] .sessions-client-edit__actions {
+    margin-top: calc(var(--spacing-32) + var(--spacing-24));
+  }
+
+  [data-sessions-add-client] .sessions-add-client__actions {
+    padding: calc(var(--spacing-32) + var(--spacing-24)) var(--spacing-24) var(--spacing-24);
   }
 
   .home-shell__mobile {
