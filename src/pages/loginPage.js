@@ -1,3 +1,6 @@
+import { bindAuthEntry, renderAuthEntry } from "/src/pages/authEntry.js";
+
 export function mountLoginPage(root) {
-  root.innerHTML = `<main class="auth-screen"></main>`;
+  root.innerHTML = renderAuthEntry();
+  bindAuthEntry(root);
 }
