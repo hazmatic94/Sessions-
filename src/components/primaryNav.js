@@ -1,3 +1,5 @@
+import { loadAccount } from "/src/data/account.js";
+
 const PRIMARY_NAV_HREFS = {
   Home: "/",
   Calendar: "/calendar",
@@ -31,8 +33,45 @@ function bindPageTransition() {
   });
 }
 
+function paintAvatarInitial(avatar, name, initial) {
+  if (!avatar) return;
+  avatar.classList.remove("sessions-avatar--image");
+  avatar.classList.add("sessions-avatar--initials");
+  avatar.setAttribute("aria-label", name);
+  const inner = avatar.querySelector(".sessions-avatar__inner");
+  if (!inner) return;
+  inner.replaceChildren();
+  const mark = document.createElement("span");
+  mark.className = "sessions-avatar__initial";
+  mark.setAttribute("aria-hidden", "true");
+  mark.textContent = initial;
+  inner.append(mark);
+}
+
+function paintSignedInAccount(root) {
+  const account = loadAccount();
+  if (!account?.businessName) return;
+  const initial = account.name.trim().charAt(0).toUpperCase();
+  root.querySelectorAll(".sessions-menu-user-header__name, .mobile-menu-panel__user-name").forEach((el) => {
+    el.textContent = account.name;
+  });
+  root.querySelectorAll(".sessions-menu-user-header__email, .mobile-menu-panel__user-email").forEach((el) => {
+    el.textContent = account.email;
+  });
+  root.querySelectorAll(".sessions-menu-user-header .sessions-avatar, [data-sessions-profile-trigger] .sessions-avatar, .mobile-menu-panel__user .sessions-avatar").forEach((avatar) => {
+    paintAvatarInitial(avatar, account.name, initial);
+  });
+  root.querySelectorAll("[data-sessions-profile-trigger]").forEach((trigger) => {
+    trigger.setAttribute("aria-label", `Open profile menu for ${account.name}`);
+  });
+  root.querySelectorAll(".mobile-menu-panel__user").forEach((trigger) => {
+    trigger.setAttribute("aria-label", `View ${account.name} profile`);
+  });
+}
+
 export function linkPrimaryNav(root, { selected } = {}) {
   bindPageTransition();
+  paintSignedInAccount(root);
   root.querySelectorAll(".sessions-left-rail .sessions-rail-item, .mobile-menu-panel .sessions-nav-item").forEach((node) => {
     const label = node.getAttribute("aria-label");
     if (!label || node.classList.contains("mobile-menu__toggle")) return;

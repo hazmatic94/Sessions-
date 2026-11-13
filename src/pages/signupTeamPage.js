@@ -17,7 +17,7 @@ function renderTeamPage(draft) {
     type: "submit",
   });
 
-  return `<main class="shop-screen">${renderSignupProgress(2)}<div class="shop-main"><form class="shop-form" data-team-form novalidate><div class="shop-form__intro shop-form__intro--center"><h1 class="shop-form__title">What's your team size?</h1><p class="shop-form__lead">This will help us set up your calendar correctly. Don't worry, this doesn't change the price - you can have unlimited team members for free on Sessions</p></div><div class="team-sizes" role="radiogroup" aria-label="Team size">${options}</div><p class="team-size__error" data-team-error hidden></p>${continueButton}</form></div>${renderSessionsFooter()}</main>`;
+  return `<main class="shop-screen">${renderSignupProgress(2)}<div class="shop-main"><form class="shop-form" data-team-form novalidate><div class="shop-form__intro"><h1 class="shop-form__title">What's your team size?</h1><p class="shop-form__lead">This will help us set up your calendar correctly. Don't worry, this doesn't change the price - you can have unlimited team members for free on Sessions</p></div><div class="team-sizes" role="radiogroup" aria-label="Team size">${options}</div><p class="team-size__error" data-team-error hidden></p>${continueButton}</form></div>${renderSessionsFooter()}</main>`;
 }
 
 export function mountSignupTeamPage(root) {
@@ -51,6 +51,7 @@ export function mountSignupTeamPage(root) {
     const selected = form.querySelector("[data-team-size].is-selected");
     try {
       await saveTeamSize(selected?.dataset.teamSize);
+      location.assign("/signup/location");
     } catch (err) {
       if (!error) return;
       error.hidden = false;

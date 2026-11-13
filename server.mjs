@@ -2,6 +2,7 @@ import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { addressSuggestions, searchQuery } from "./src/data/addressSearch.js";
 
 const root = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const publicDir = join(root, "public");
@@ -41,9 +42,30 @@ function send(res, status, body, headers = {}) {
   res.end(body);
 }
 
+async function lookupAddresses(raw) {
+  const { query } = searchQuery(raw);
+  if (query.length < 3) return [];
+  const endpoint = new URL("https://photon.komoot.io/api/");
+  endpoint.searchParams.set("q", query);
+  endpoint.searchParams.set("limit", "5");
+  endpoint.searchParams.set("lang", "en");
+  endpoint.searchParams.set("bbox", "112,-44,154,-10");
+  const response = await fetch(endpoint, {
+    headers: { Accept: "application/json", "User-Agent": "Sessions onboarding address search" },
+  });
+  if (!response.ok) return [];
+  return addressSuggestions(raw, await response.json());
+}
+
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   let pathname = url.pathname;
+  if (pathname === "/api/address" && req.method === "GET") {
+    lookupAddresses(url.searchParams.get("q") || "")
+      .then((suggestions) => send(res, 200, JSON.stringify(suggestions), { "Content-Type": "application/json" }))
+      .catch(() => send(res, 200, "[]", { "Content-Type": "application/json" }));
+    return;
+  }
   if (pathname.endsWith("/") && pathname !== "/") pathname = pathname.slice(0, -1);
   if (pathname === "/") pathname = "/index.html";
   if (pathname === "/calendar") pathname = "/calendar.html";
@@ -56,6 +78,8 @@ const server = createServer((req, res) => {
   if (pathname === "/signup") pathname = "/signup.html";
   if (pathname === "/signup/shop") pathname = "/signup-shop.html";
   if (pathname === "/signup/team") pathname = "/signup-team.html";
+  if (pathname === "/signup/location") pathname = "/signup-location.html";
+  if (pathname === "/signup/done") pathname = "/signup-done.html";
 
   const fromDesignSystem = pathname === "/ds" || pathname.startsWith("/ds/");
   const fromPages = pathname === "/src" || pathname.startsWith("/src/");

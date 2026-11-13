@@ -15,6 +15,8 @@ import {
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderPageWrapper } from "/src/components/pageWrapper.js";
 import { linkPrimaryNav } from "/src/components/primaryNav.js";
+import { loadAccount } from "/src/data/account.js";
+import { activateShop, loadSignup } from "/src/data/signup.js";
 
 const navOptions = {
   href: "/",
@@ -174,6 +176,8 @@ export function renderHomePage() {
 }
 
 export function mountHomePage(root) {
+  const draft = loadSignup();
+  if (draft?.step === "location" && !loadAccount().businessName) activateShop();
   root.innerHTML = renderHomePage();
   root.querySelector("#top-nav").innerHTML = renderTopNav(navOptions);
   setupSessionsProfileMenu(root);

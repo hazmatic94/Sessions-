@@ -86,7 +86,7 @@ function formatOtpPhone(phone) {
 
 function fieldValue(field, revealed) {
   if (field.key === "phone") return displayPhone(account.phone);
-  if (field.key !== "password" || revealed) return account[field.key];
+  if (field.key !== "password" || revealed || !account.password) return account[field.key];
   return "••••••••";
 }
 

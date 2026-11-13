@@ -1,10 +1,11 @@
 /**
- * New-shop signup. This is not the logged-in mock account.
- * Mock today → localStorage "sessions.signup"
+ * New-shop signup.
+ * Mock today → localStorage "sessions.signup", then "sessions.account" once the shop is created.
  * Later → supabase.auth.signInWithOtp({ email })
- *         supabase.from("businesses").upsert({ owner_email, name, website, team_size })
- * An email that already owns a shop goes to login, not this draft.
+ *         supabase.from("businesses").upsert({ owner_email, name, website, team_size, address, mobile_only, lat, lon })
+ * An email that already owns a shop goes straight into that shop.
  */
+import { loadAccount, saveAccount } from "./account.js";
 
 const SIGNUP_KEY = "sessions.signup";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,6 +40,18 @@ export function normalizeTeamSize(value) {
   return TEAM_SIZES.some((size) => size.id === id) ? id : null;
 }
 
+function coordinate(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+export function normalizeLocation({ address, mobileOnly }) {
+  const mobile = Boolean(mobileOnly);
+  const line = String(address || "").trim();
+  if (!mobile && !line) throw new Error("Enter your address");
+  return { address: mobile ? null : line, mobileOnly: mobile };
+}
+
 function readDraft() {
   try {
     const parsed = JSON.parse(localStorage.getItem(SIGNUP_KEY) || "");
@@ -50,7 +63,11 @@ function readDraft() {
       businessName: String(parsed.businessName || ""),
       website: parsed.website ? String(parsed.website) : null,
       teamSize: normalizeTeamSize(parsed.teamSize),
-      step: parsed.step === "team" ? "team" : "shop",
+      address: parsed.address ? String(parsed.address) : null,
+      mobileOnly: Boolean(parsed.mobileOnly),
+      lat: coordinate(parsed.lat),
+      lon: coordinate(parsed.lon),
+      step: parsed.step === "location" ? "location" : parsed.step === "team" ? "team" : "shop",
       updatedAt: String(parsed.updatedAt || ""),
     };
   } catch {
@@ -76,15 +93,52 @@ export function loadSignup() {
  * Later → supabase.auth.signInWithOtp({ email })
  * @returns {Promise<{ next: string }>}
  */
+export function routeAfterEmail(email, account) {
+  const normalized = normalizeSignupEmail(email);
+  if (!normalized) return null;
+  if (account?.businessName && String(account.email || "").toLowerCase() === normalized) return "/";
+  return "/signup/shop";
+}
+
+export function shopAccountFromDraft(draft) {
+  if (!draft?.email || !draft.businessName || !draft.teamSize) return null;
+  if (!draft.mobileOnly && !draft.address) return null;
+  return {
+    name: draft.businessName,
+    email: draft.email,
+    phone: "",
+    password: "",
+    businessName: draft.businessName,
+    website: draft.website || null,
+    teamSize: draft.teamSize,
+    address: draft.mobileOnly ? null : draft.address,
+    mobileOnly: Boolean(draft.mobileOnly),
+    lat: draft.mobileOnly ? null : draft.lat ?? null,
+    lon: draft.mobileOnly ? null : draft.lon ?? null,
+    pendingEmailChange: null,
+    pendingPhoneChange: null,
+    pendingPasswordReset: null,
+  };
+}
+
+export function activateShop() {
+  const account = shopAccountFromDraft(readDraft());
+  if (!account) return null;
+  saveAccount(account);
+  return account;
+}
+
 export async function continueWithEmail(email) {
   const normalized = normalizeSignupEmail(email);
   if (!normalized) throw new Error("Enter a valid email");
+  const next = routeAfterEmail(normalized, loadAccount());
+  if (next === "/") return { next };
   const current = readDraft();
   const draft = current?.email === normalized
     ? { ...current, email: normalized }
     : { email: normalized, businessName: "", website: null };
   writeDraft(draft);
-  return { next: "/signup/shop" };
+  return { next };
 }
 
 /**
@@ -117,6 +171,24 @@ export async function saveTeamSize(teamSize) {
   return { teamSize: size };
 }
 
+/**
+ * Later → supabase.from("businesses").update({ address, mobile_only, lat, lon })
+ * Suggestions come from /api/address. A typed address still saves without a point.
+ * @returns {Promise<{ address: string | null, mobileOnly: boolean, lat: number | null, lon: number | null }>}
+ */
+export async function saveLocation({ address, mobileOnly, lat, lon }) {
+  const current = readDraft();
+  if (!current?.email) throw new Error("Enter your email first");
+  if (!String(current.businessName || "").trim()) throw new Error("Enter your business name");
+  if (!current.teamSize) throw new Error("Choose a team size");
+  const location = normalizeLocation({ address, mobileOnly });
+  const point = location.mobileOnly || coordinate(lat) == null || coordinate(lon) == null
+    ? { lat: null, lon: null }
+    : { lat: coordinate(lat), lon: coordinate(lon) };
+  writeDraft({ ...current, ...location, ...point, step: "location" });
+  return { ...location, ...point };
+}
+
 export function signupSelfCheck() {
   const assert = (ok, message) => {
     if (!ok) throw new Error(message);
@@ -142,4 +214,41 @@ export function signupSelfCheck() {
   assert(missing, "name required");
   assert(normalizeTeamSize("2-5") === "2-5", "team size");
   assert(normalizeTeamSize("nope") === null, "bad team size");
+  const located = normalizeLocation({ address: "  1 King St ", mobileOnly: false });
+  assert(located.address === "1 King St" && located.mobileOnly === false, "address");
+  const mobile = normalizeLocation({ address: "1 King St", mobileOnly: true });
+  assert(mobile.address === null && mobile.mobileOnly === true, "mobile only");
+  let noAddress = false;
+  try {
+    normalizeLocation({ address: "  ", mobileOnly: false });
+  } catch {
+    noAddress = true;
+  }
+  assert(noAddress, "address required");
+  const opened = shopAccountFromDraft({
+    email: "good@shop.com",
+    businessName: "June Cuts",
+    website: "sessions.com",
+    teamSize: "just-me",
+    address: "1 King St",
+    mobileOnly: false,
+    lat: -33.9,
+    lon: 151.2,
+  });
+  assert(opened?.name === "June Cuts" && opened.email === "good@shop.com" && opened.address === "1 King St", "open shop");
+  assert(opened.phone === "" && opened.password === "", "no demo secrets");
+  const mobileShop = shopAccountFromDraft({
+    email: "good@shop.com",
+    businessName: "June Cuts",
+    teamSize: "2-5",
+    address: "1 King St",
+    mobileOnly: true,
+    lat: -33.9,
+    lon: 151.2,
+  });
+  assert(mobileShop.address === null && mobileShop.lat === null && mobileShop.lon === null, "mobile shop");
+  assert(shopAccountFromDraft({ email: "good@shop.com", businessName: "June Cuts" }) === null, "incomplete shop");
+  assert(routeAfterEmail("good@shop.com", opened) === "/", "return home");
+  assert(routeAfterEmail("other@shop.com", opened) === "/signup/shop", "new email");
+  assert(routeAfterEmail("goodjoblarry@gmail.com", { email: "goodjoblarry@gmail.com", name: "Larry June" }) === "/signup/shop", "demo account");
 }
