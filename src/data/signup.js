@@ -1,11 +1,11 @@
 /**
  * New-shop signup.
- * Mock today → localStorage "sessions.signup", then "sessions.account" once the shop is created.
- * Later → supabase.auth.signInWithOtp({ email })
- *         supabase.from("businesses").upsert({ owner_email, name, website, team_size, address, mobile_only, lat, lon })
+ * Email code is Supabase Auth. The draft stays in localStorage "sessions.signup"
+ * until the done screen calls create_shop, which writes public.businesses.
  * An email that already owns a shop goes straight into that shop.
  */
 import { loadAccount, saveAccount } from "./account.js";
+import { createShop, currentBusiness, loadAuthSession } from "./supabaseAuth.js";
 
 const SIGNUP_KEY = "sessions.signup";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -121,10 +121,44 @@ export function shopAccountFromDraft(draft) {
   };
 }
 
-export function activateShop() {
+export function rememberSignupEmail(email) {
+  const normalized = normalizeSignupEmail(email);
+  if (!normalized) throw new Error("Enter a valid email");
+  const current = readDraft();
+  const draft = current?.email === normalized
+    ? { ...current, email: normalized }
+    : { email: normalized, businessName: "", website: null };
+  return writeDraft(draft);
+}
+
+export function rememberBusiness(business, email) {
+  const account = {
+    name: business.name,
+    email: normalizeSignupEmail(email) || String(email || ""),
+    phone: "",
+    password: "",
+    businessName: business.name,
+    website: business.website || null,
+    teamSize: business.team_size || null,
+    address: business.address || null,
+    mobileOnly: Boolean(business.mobile_only),
+    lat: business.lat ?? null,
+    lon: business.lon ?? null,
+    pendingEmailChange: null,
+    pendingPhoneChange: null,
+    pendingPasswordReset: null,
+  };
+  saveAccount(account);
+  return account;
+}
+
+export async function activateShop() {
   const account = shopAccountFromDraft(readDraft());
   if (!account) return null;
   saveAccount(account);
+  if (!loadAuthSession()) return account;
+  const existing = await currentBusiness();
+  if (!existing) await createShop(account);
   return account;
 }
 

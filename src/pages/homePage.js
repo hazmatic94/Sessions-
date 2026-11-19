@@ -175,9 +175,15 @@ export function renderHomePage() {
   `;
 }
 
-export function mountHomePage(root) {
+export async function mountHomePage(root) {
   const draft = loadSignup();
-  if (draft?.step === "location" && !loadAccount().businessName) activateShop();
+  if (draft?.step === "location" && !loadAccount().businessName) {
+    try {
+      await activateShop();
+    } catch {
+      // The local shop is already saved. The remote row can be retried from the done screen.
+    }
+  }
   root.innerHTML = renderHomePage();
   root.querySelector("#top-nav").innerHTML = renderTopNav(navOptions);
   setupSessionsProfileMenu(root);

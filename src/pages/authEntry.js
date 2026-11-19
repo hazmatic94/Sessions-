@@ -1,7 +1,19 @@
 import { renderSessionsButton } from "/ds/src/components/button/button.js";
 import { renderSessionsInput } from "/ds/src/components/input/input.js";
 import { renderSessionsLogo } from "/ds/src/components/navigation/logo.js";
-import { continueWithEmail } from "/src/data/signup.js";
+import { normalizeSignupEmail, rememberBusiness, rememberSignupEmail } from "/src/data/signup.js";
+import { routeAfterVerified } from "/src/data/supabaseAuth.js";
+import {
+  authUser,
+  currentBusiness,
+  loadPendingEmail,
+  normalizeEmailCode,
+  saveAuthSession,
+  savePendingEmail,
+  sendEmailCode,
+  sessionFromRedirectHash,
+  verifyEmailCode,
+} from "/src/data/supabaseAuth.js";
 
 const PHONE_ICON = `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M1 3.5C1 2.84 1.26 2.2 1.73 1.73 2.2 1.26 2.84 1 3.5 1h1.14c.72 0 1.35.49 1.52 1.18l.92 3.69a1.5 1.5 0 0 1-.58 1.63l-1.08.8a.4.4 0 0 0-.1.3 8.6 8.6 0 0 0 4.18 4.17.4.4 0 0 0 .29-.1l.81-1.08a1.5 1.5 0 0 1 1.63-.58l3.68.92c.7.17 1.18.8 1.18 1.52V16a2.5 2.5 0 0 1-2.5 2.5h-1.88C6.88 18.5 1 12.62 1 5.38V3.5Z"/></svg>`;
 
@@ -29,13 +41,28 @@ export function renderAuthEntry() {
     fullWidth: true,
     type: "submit",
   });
+  const code = renderSessionsInput({
+    id: "auth-code",
+    name: "code",
+    type: "text",
+    label: "Code",
+    placeholder: "6-digit code",
+    fullWidth: true,
+    ariaLabel: "Verification code",
+  }).replace("<input ", '<input inputmode="numeric" autocomplete="one-time-code" maxlength="6" ');
+  const verifyButton = renderSessionsButton({
+    variant: "primary",
+    label: "Verify",
+    fullWidth: true,
+    type: "submit",
+  });
 
   const logo = renderSessionsLogo({ ariaLabel: "Sessions" }).replace(
     /^<a\b[^>]*>/,
     '<div class="sessions-logo">',
   ).replace("</a>", "</div>");
 
-  return `<main class="auth-screen"><section class="auth-panel"><form class="auth-form" data-auth-form novalidate><div class="auth-form__intro"><h1 class="auth-form__title">Sessions for Barbers</h1><p class="auth-form__lead">Create an account or log in to manage your business</p></div>${email}<p class="auth-form__note">We'll send you a verification code. Standard rates may apply.</p>${continueButton}<div class="auth-or" role="separator"><span>OR</span></div><div class="auth-socials">${socialButton(PHONE_ICON, "Continue with Mobile")}${socialButton(GOOGLE_ICON, "Continue with Google")}${socialButton(APPLE_ICON, "Continue with Apple")}</div><div class="auth-customer"><p>Are you a customer looking to book an appointment?</p><button type="button" class="auth-customer__link">Book as a customer</button></div><p class="auth-legal">This site is protected by reCAPTCHA.<br>Google Privacy Policy and Terms of Service apply</p></form></section><aside class="auth-hero"><div class="auth-hero__mark">${logo}<p class="auth-hero__tag">Book your next session</p></div></aside></main>`;
+  return `<main class="auth-screen"><section class="auth-panel"><form class="auth-form" data-auth-form novalidate><div class="auth-form__intro"><h1 class="auth-form__title">Sessions for Barbers</h1><p class="auth-form__lead" data-auth-lead>Create an account or log in to manage your business</p></div><div data-auth-email-step>${email}<p class="auth-form__note">We'll send you a verification code. Standard rates may apply.</p>${continueButton}</div><div data-auth-code-step hidden>${code}<p class="auth-code__resend"><button type="button" class="auth-customer__link" data-auth-resend>Resend code</button></p>${verifyButton}<p class="auth-code__resend"><button type="button" class="auth-customer__link" data-auth-back>Use a different email</button></p></div><div class="auth-or" role="separator"><span>OR</span></div><div class="auth-socials">${socialButton(PHONE_ICON, "Continue with Mobile")}${socialButton(GOOGLE_ICON, "Continue with Google")}${socialButton(APPLE_ICON, "Continue with Apple")}</div><div class="auth-customer"><p>Are you a customer looking to book an appointment?</p><button type="button" class="auth-customer__link">Book as a customer</button></div><p class="auth-legal">This site is protected by reCAPTCHA.<br>Google Privacy Policy and Terms of Service apply</p></form></section><aside class="auth-hero"><div class="auth-hero__mark">${logo}<p class="auth-hero__tag">Book your next session</p></div></aside></main>`;
 }
 
 export function setAuthInputError(id, message) {
@@ -61,17 +88,93 @@ export function setAuthInputError(id, message) {
   note.textContent = message;
 }
 
+function showCodeStep(form, email) {
+  form.dataset.authMode = "code";
+  form.querySelector("[data-auth-email-step]").hidden = true;
+  form.querySelector("[data-auth-code-step]").hidden = false;
+  const lead = form.querySelector("[data-auth-lead]");
+  if (lead) lead.textContent = `Enter the 6-digit code we sent to ${email}`;
+  form.querySelector("#auth-code")?.focus();
+}
+
+function showEmailStep(form) {
+  form.dataset.authMode = "email";
+  form.querySelector("[data-auth-email-step]").hidden = false;
+  form.querySelector("[data-auth-code-step]").hidden = true;
+  const lead = form.querySelector("[data-auth-lead]");
+  if (lead) lead.textContent = "Create an account or log in to manage your business";
+}
+
+async function enterApp(email) {
+  const business = await currentBusiness();
+  if (routeAfterVerified(business) === "/") {
+    rememberBusiness(business, email);
+    location.assign("/");
+    return;
+  }
+  rememberSignupEmail(email);
+  location.assign("/signup/shop");
+}
+
 export function bindAuthEntry(root) {
   const form = root.querySelector("[data-auth-form]");
-  form?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const input = form.querySelector("#auth-email");
-    setAuthInputError("auth-email", "");
+  if (!form) return;
+  let pendingEmail = loadPendingEmail();
+
+  const redirect = sessionFromRedirectHash(location.hash);
+  if (redirect) {
+    saveAuthSession(redirect);
+    history.replaceState({}, "", location.pathname);
+    authUser()
+      .then((user) => enterApp(user.email || pendingEmail))
+      .catch((error) => setAuthInputError("auth-email", error instanceof Error ? error.message : "Sign in again"));
+  } else if (pendingEmail) {
+    showCodeStep(form, pendingEmail);
+  }
+
+  form.querySelector("[data-auth-back]")?.addEventListener("click", () => {
+    pendingEmail = "";
+    savePendingEmail("");
+    setAuthInputError("auth-code", "");
+    showEmailStep(form);
+  });
+
+  form.querySelector("[data-auth-resend]")?.addEventListener("click", async () => {
+    setAuthInputError("auth-code", "");
     try {
-      const { next } = await continueWithEmail(input?.value);
-      location.assign(next);
+      await sendEmailCode(pendingEmail);
     } catch (error) {
-      setAuthInputError("auth-email", error instanceof Error ? error.message : "Enter a valid email");
+      setAuthInputError("auth-code", error instanceof Error ? error.message : "Could not resend the code");
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector("[data-auth-code-step]:not([hidden]) button[type='submit'], [data-auth-email-step]:not([hidden]) button[type='submit']");
+    if (submit) submit.disabled = true;
+    try {
+      if (form.dataset.authMode === "code") {
+        setAuthInputError("auth-code", "");
+        const code = normalizeEmailCode(form.querySelector("#auth-code")?.value);
+        if (!code) throw new Error("Enter the 6-digit code");
+        const session = await verifyEmailCode(pendingEmail, code);
+        savePendingEmail("");
+        await enterApp(session.email || pendingEmail);
+        return;
+      }
+      setAuthInputError("auth-email", "");
+      const email = form.querySelector("#auth-email")?.value;
+      const normalized = normalizeSignupEmail(email);
+      if (!normalized) throw new Error("Enter a valid email");
+      await sendEmailCode(normalized);
+      pendingEmail = normalized;
+      savePendingEmail(normalized);
+      showCodeStep(form, normalized);
+    } catch (error) {
+      const id = form.dataset.authMode === "code" ? "auth-code" : "auth-email";
+      setAuthInputError(id, error instanceof Error ? error.message : "Try again");
+    } finally {
+      if (submit) submit.disabled = false;
     }
   });
 }

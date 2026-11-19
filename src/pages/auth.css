@@ -71,6 +71,17 @@ body,
   margin-top: var(--spacing-24);
 }
 
+.auth-code__resend {
+  margin-top: var(--spacing-16);
+  text-align: center;
+}
+
+.auth-form[data-auth-mode="code"] .auth-or,
+.auth-form[data-auth-mode="code"] .auth-socials,
+.auth-form[data-auth-mode="code"] .auth-customer {
+  display: none;
+}
+
 .auth-or {
   display: flex;
   align-items: center;
@@ -138,7 +149,7 @@ body,
   box-sizing: border-box;
   padding: 0 var(--spacing-24) var(--spacing-40);
   border-left: 1px solid var(--color-border-subtle);
-  background: var(--black-900) url("/assets/auth-hero.jpg") center / cover no-repeat;
+  background: var(--black-900) url("/assets/auth-hero.jpg?v=2") center 42% / cover no-repeat;
 }
 
 .auth-hero::before {

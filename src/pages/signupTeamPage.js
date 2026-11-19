@@ -1,6 +1,7 @@
 import { renderSessionsButton } from "/ds/src/components/button/button.js";
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { TEAM_SIZES, loadSignup, saveTeamSize } from "/src/data/signup.js";
+import { requireSignedIn } from "/src/data/supabaseAuth.js";
 import { renderSignupProgress } from "/src/pages/signupShopPage.js";
 
 const CHECK = `<svg class="team-size__check" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6.2 10.2 8.7 12.7 13.8 7.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -21,6 +22,7 @@ function renderTeamPage(draft) {
 }
 
 export function mountSignupTeamPage(root) {
+  if (!requireSignedIn()) return;
   const draft = loadSignup();
   if (!draft?.email) {
     location.replace("/signup");

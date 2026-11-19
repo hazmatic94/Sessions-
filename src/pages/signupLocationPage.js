@@ -3,6 +3,7 @@ import { renderSessionsCheckbox } from "/ds/src/components/checkbox/checkbox.js"
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderSessionsInput } from "/ds/src/components/input/input.js";
 import { loadSignup, saveLocation } from "/src/data/signup.js";
+import { requireSignedIn } from "/src/data/supabaseAuth.js";
 import { setAuthInputError } from "/src/pages/authEntry.js";
 import { renderSignupProgress } from "/src/pages/signupShopPage.js";
 
@@ -154,6 +155,7 @@ function setAddressDisabled(field, disabled) {
 }
 
 export function mountSignupLocationPage(root) {
+  if (!requireSignedIn()) return;
   const draft = loadSignup();
   if (!draft?.email) {
     location.replace("/signup");

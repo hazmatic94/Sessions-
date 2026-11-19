@@ -2,6 +2,7 @@ import { renderSessionsButton } from "/ds/src/components/button/button.js";
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderSessionsInput } from "/ds/src/components/input/input.js";
 import { loadSignup, saveShopProfile } from "/src/data/signup.js";
+import { requireSignedIn } from "/src/data/supabaseAuth.js";
 import { setAuthInputError } from "/src/pages/authEntry.js";
 
 export function renderSignupProgress(step) {
@@ -43,6 +44,7 @@ function renderShopPage(draft) {
 }
 
 export function mountSignupShopPage(root) {
+  if (!requireSignedIn()) return;
   const draft = loadSignup();
   if (!draft) {
     location.replace("/signup");
