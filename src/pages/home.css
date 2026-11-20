@@ -94,8 +94,24 @@ body {
   }
 
   .sessions-surface-drawer.is-sessions-inner-page {
-    transform: translateX(0);
     transition: transform var(--motion-medium) var(--ease-emphasized);
+  }
+
+  .sessions-surface-drawer.is-sessions-inner-page:not([hidden]):not(.is-closing) {
+    transform: translateX(0);
+  }
+
+  .sessions-surface-drawer.is-sessions-inner-page {
+    align-items: stretch;
+    background: var(--color-surface-base);
+  }
+
+  .sessions-surface-drawer.is-sessions-inner-page .sessions-surface {
+    flex: 1 1 auto;
+    align-self: stretch;
+    height: auto;
+    min-height: 100%;
+    background: var(--color-surface-base);
   }
 }
 

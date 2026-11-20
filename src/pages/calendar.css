@@ -810,7 +810,6 @@
     width: 100%;
     height: calc(100dvh - var(--mobile-menu-height));
     background: var(--black-900);
-    transform: none;
   }
 
   [data-calendar-client-picker].sessions-surface-drawer[hidden] {
@@ -1070,7 +1069,6 @@
     width: 100%;
     height: calc(100dvh - var(--mobile-menu-height));
     background: var(--black-900);
-    transform: none;
   }
 
   .calendar-block-edit.sessions-surface-drawer[hidden] {

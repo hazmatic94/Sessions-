@@ -591,7 +591,6 @@
     width: 100%;
     height: calc(100dvh - var(--mobile-menu-height));
     background: var(--black-900);
-    transform: none;
   }
 
   [data-sessions-settings-edit] > .sessions-surface-close,

@@ -37,6 +37,11 @@ export function setSessionsSurfaceDrawerOpen({
       else scrim.hidden = false;
     }
     drawer.hidden = false;
+    if (mobile && !prefersReducedSurfaceMotion()) {
+      drawer.style.transform = "translateX(100%)";
+      void drawer.offsetWidth;
+      drawer.style.transform = "";
+    }
     document.body.classList.toggle("is-sessions-inner-page-open", mobile);
     return Promise.resolve();
   }

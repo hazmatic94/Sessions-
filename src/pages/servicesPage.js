@@ -6,7 +6,7 @@ import {
   renderTopNav,
   setupSessionsProfileMenu,
 } from "/ds/src/components/navigation/index.js";
-import { renderSessionsAddServiceDrawer, setupSessionsAddService } from "/ds/src/components/patterns/addService.js";
+import { renderSessionsAddServiceDrawer, renderSessionsAddServiceSurfaceContent, setupSessionsAddService } from "/ds/src/components/patterns/addService.js";
 import { renderSessionsFilterBar, setupSessionsFilterBars } from "/ds/src/components/patterns/filterBar.js";
 import { renderSessionsFooter } from "/ds/src/components/patterns/footer.js";
 import { renderSessionsServiceList, setupSessionsServiceLists } from "/ds/src/components/rows/serviceListRow.js";
@@ -107,7 +107,7 @@ export function renderServicesPage() {
         </main>
       </div>
       ${renderSessionsFooter()}
-      ${renderSessionsAddServiceDrawer()}
+      ${renderServiceDetailsDrawer()}
       <div class="sessions-modal-host" data-sessions-service-modal hidden>
         ${renderSessionsModal({
           title: "You have unsaved changes.",
@@ -118,6 +118,17 @@ export function renderServicesPage() {
       </div>
     </div>
   `;
+}
+
+
+function renderServiceDetailsDrawer() {
+  const plain = renderSessionsAddServiceSurfaceContent();
+  const inner = renderSessionsAddServiceSurfaceContent({
+    showNav: true,
+    navClassName: "sessions-add-client__nav",
+    backClassName: "sessions-client-profile__back",
+  });
+  return renderSessionsAddServiceDrawer().replace(plain, inner);
 }
 
 function renderServicesEmpty(hasServices) {
